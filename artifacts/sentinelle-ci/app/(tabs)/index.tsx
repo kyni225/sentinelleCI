@@ -1,8 +1,8 @@
 import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -30,6 +30,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
   const { reports, crisisMode, crisisQuartiers } = useReports();
+  const [crisisDismissed, setCrisisDismissed] = useState(false);
 
   const myStats = useMemo(() => {
     const mine = reports.filter((r) => r.isMine);
@@ -49,7 +50,9 @@ export default function HomeScreen() {
   }, [reports, profile.commune]);
 
   const showCrisisInMyArea =
-    crisisMode && crisisQuartiers.includes(profile.commune);
+    crisisMode &&
+    crisisQuartiers.includes(profile.commune) &&
+    !crisisDismissed;
 
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
   const bottomPad =
@@ -64,36 +67,58 @@ export default function HomeScreen() {
           paddingBottom: bottomPad,
         }}
       >
-        <LinearGradient
-          colors={[colors.primary, colors.primaryDark]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroBg}
-        >
+        <View style={styles.heroBg}>
           <View style={styles.brandRow}>
             <View style={styles.brandLeft}>
-              <View style={styles.logoDot}>
-                <Feather name="shield" size={14} color={colors.primary} />
+              <Image
+                source={require("@/assets/images/icon.png")}
+                style={styles.logoImage}
+              />
+              <View>
+                <Text
+                  style={[styles.brandName, { color: colors.foreground }]}
+                >
+                  SentinelleCI
+                </Text>
+                <Text
+                  style={[
+                    styles.brandTagline,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
+                  Votre voix, votre commune
+                </Text>
               </View>
-              <Text style={styles.brandName}>SentinelleCI</Text>
             </View>
-            <View style={styles.communePill}>
-              <Feather name="map-pin" size={11} color="#fff" />
-              <Text style={styles.communeText}>{profile.commune}</Text>
+            <View
+              style={[
+                styles.communePill,
+                {
+                  backgroundColor: colors.surfaceAlt,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Feather name="map-pin" size={11} color={colors.primary} />
+              <Text style={[styles.communeText, { color: colors.primary }]}>
+                {profile.commune}
+              </Text>
             </View>
           </View>
 
-          <Text style={styles.greeting}>
+          <Text style={[styles.greeting, { color: colors.foreground }]}>
             {getGreeting()}, {profile.firstName}
           </Text>
-          <Text style={styles.greetingSub}>
+          <Text
+            style={[styles.greetingSub, { color: colors.mutedForeground }]}
+          >
             Votre quartier compte sur vos yeux aujourd'hui.
           </Text>
-        </LinearGradient>
+        </View>
 
         {showCrisisInMyArea ? (
           <Pressable
-            onPress={() => router.push("/carte")}
+            onPress={() => setCrisisDismissed(true)}
             style={[
               styles.crisisBanner,
               { backgroundColor: colors.destructive },
@@ -106,10 +131,12 @@ export default function HomeScreen() {
               <Text style={styles.crisisTitle}>Mode crise activé</Text>
               <Text style={styles.crisisText}>
                 Plusieurs urgences détectées à {profile.commune} ces dernières
-                heures.
+                heures. Touchez pour fermer.
               </Text>
             </View>
-            <Feather name="chevron-right" size={20} color="#fff" />
+            <View style={styles.crisisClose}>
+              <Feather name="x" size={16} color="#fff" />
+            </View>
           </Pressable>
         ) : null}
 
@@ -368,10 +395,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   heroBg: {
     paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 30,
-    borderBottomLeftRadius: 26,
-    borderBottomRightRadius: 26,
+    paddingTop: 8,
+    paddingBottom: 18,
   },
   brandRow: {
     flexDirection: "row",
@@ -381,67 +406,73 @@ const styles = StyleSheet.create({
   brandLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
-  logoDot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
+  logoImage: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
   },
   brandName: {
-    color: "#fff",
     fontFamily: "Inter_700Bold",
     fontSize: 16,
     letterSpacing: 0.3,
+  },
+  brandTagline: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+    marginTop: 1,
   },
   communePill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 1,
   },
   communeText: {
-    color: "#fff",
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_700Bold",
     fontSize: 11,
   },
   greeting: {
-    color: "#fff",
     fontFamily: "Inter_700Bold",
     fontSize: 28,
     marginTop: 18,
   },
   greetingSub: {
-    color: "rgba(255,255,255,0.85)",
     fontFamily: "Inter_400Regular",
     fontSize: 14,
     marginTop: 4,
   },
   crisisBanner: {
     marginHorizontal: 16,
-    marginTop: -16,
+    marginTop: 4,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     padding: 14,
     borderRadius: 14,
     shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
   crisisIcon: {
     width: 38,
     height: 38,
     borderRadius: 12,
     backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  crisisClose: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.22)",
     alignItems: "center",
     justifyContent: "center",
   },
