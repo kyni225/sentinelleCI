@@ -3,7 +3,6 @@ import { BlurView } from "expo-blur";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs, useRouter } from "expo-router";
 import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
-import { SymbolView } from "expo-symbols";
 import React from "react";
 import {
   Platform,
@@ -19,12 +18,12 @@ function NativeTabLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
+        <Icon sf={{ default: "house", selected: "house.fill" }} />
+        <Label>Accueil</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="carte">
         <Icon sf={{ default: "map", selected: "map.fill" }} />
         <Label>Carte</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="feed">
-        <Icon sf={{ default: "list.bullet", selected: "list.bullet" }} />
-        <Label>Fil</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="signaler-tab">
         <Icon sf={{ default: "plus.circle.fill", selected: "plus.circle.fill" }} />
@@ -108,18 +107,18 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Carte",
+          title: "Accueil",
           tabBarIcon: ({ color }) => (
-            <Feather name="map" size={22} color={color} />
+            <Feather name="home" size={22} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="feed"
+        name="carte"
         options={{
-          title: "Fil",
+          title: "Carte",
           tabBarIcon: ({ color }) => (
-            <Feather name="list" size={22} color={color} />
+            <Feather name="map" size={22} color={color} />
           ),
         }}
       />
@@ -170,16 +169,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   centerButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
     marginTop: -22,
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 10,
     borderWidth: 4,
     borderColor: "#fff",
   },

@@ -13,15 +13,17 @@ export type StatusEvent = {
 
 export type Report = {
   id: string;
+  number: string;
   category: CategoryId;
   description: string;
-  photoUri: string | null;
+  photoUris: string[];
   quartier: string;
   address: string;
   latitude: number;
   longitude: number;
   createdAt: number;
   authorPseudo: string;
+  isAnonymous: boolean;
   status: Status;
   history: StatusEvent[];
   ai: {
@@ -43,6 +45,7 @@ export type Report = {
 
 export type CitizenProfile = {
   pseudo: string;
+  firstName: string;
   commune: string;
   reputation: number;
   level: string;
@@ -50,4 +53,5 @@ export type CitizenProfile = {
   reportsCount: number;
   resolvedCount: number;
   badges: string[];
+  anonymousMode: boolean;
 };

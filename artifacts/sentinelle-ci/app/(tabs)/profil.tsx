@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
@@ -22,7 +23,7 @@ export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { profile } = useProfile();
+  const { profile, toggleAnonymous } = useProfile();
   const { reports } = useReports();
 
   const stats = useMemo(() => {
@@ -75,7 +76,7 @@ export default function ProfileScreen() {
       >
         <View style={styles.heroWrap}>
           <LinearGradient
-            colors={[colors.primary, "#2A4A75"]}
+            colors={[colors.primary, colors.primaryDark]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.hero}
@@ -168,19 +169,76 @@ export default function ProfileScreen() {
             unlocked
             icon="eye"
             title="Témoin fiable"
-            description="Vos signalements sont confirmés par la communauté."
+            description="Vos signalements sont confirmés."
           />
           <BadgeItem
             unlocked={profile.reputation >= 500}
             icon="shield"
             title="Vigie de quartier"
-            description="500 points de réputation atteints."
+            description="500 points atteints."
           />
           <BadgeItem
             unlocked={profile.reputation >= 1000}
             icon="zap"
             title="Gardien de la cité"
-            description="1000 points : votre voix porte loin."
+            description="1000 points : voix qui porte."
+          />
+        </View>
+
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+          Confidentialité
+        </Text>
+        <View
+          style={[
+            styles.privacyCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <View
+            style={[
+              styles.privacyIcon,
+              {
+                backgroundColor: profile.anonymousMode
+                  ? colors.primary
+                  : colors.surfaceAlt,
+              },
+            ]}
+          >
+            <Feather
+              name={profile.anonymousMode ? "eye-off" : "user"}
+              size={18}
+              color={profile.anonymousMode ? "#fff" : colors.primary}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{
+                color: colors.foreground,
+                fontFamily: "Inter_700Bold",
+                fontSize: 14,
+              }}
+            >
+              Signalement anonyme
+            </Text>
+            <Text
+              style={{
+                color: colors.mutedForeground,
+                fontFamily: "Inter_400Regular",
+                fontSize: 12,
+                marginTop: 2,
+                lineHeight: 16,
+              }}
+            >
+              {profile.anonymousMode
+                ? "Vos prochains signalements seront publiés sous « Citoyen anonyme »."
+                : "Vos signalements affichent votre pseudo public."}
+            </Text>
+          </View>
+          <Switch
+            value={profile.anonymousMode}
+            onValueChange={() => toggleAnonymous()}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor="#fff"
           />
         </View>
 
@@ -199,11 +257,7 @@ export default function ProfileScreen() {
             value="Activées"
           />
           <Divider />
-          <SettingRow
-            icon="globe"
-            label="Langue"
-            value="Français"
-          />
+          <SettingRow icon="globe" label="Langue" value="Français" />
           <Divider />
           <SettingRow icon="lock" label="Données blockchain" value="Polygon" />
           <Divider />
@@ -211,7 +265,9 @@ export default function ProfileScreen() {
             onPress={() => router.push(`/quartier/${profile.commune}`)}
             style={styles.settingRow}
           >
-            <View style={[styles.settingIcon, { backgroundColor: colors.surfaceAlt }]}>
+            <View
+              style={[styles.settingIcon, { backgroundColor: colors.surfaceAlt }]}
+            >
               <Feather name="bar-chart-2" size={16} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
@@ -235,7 +291,11 @@ export default function ProfileScreen() {
                 Statistiques et historique de {profile.commune}
               </Text>
             </View>
-            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+            <Feather
+              name="chevron-right"
+              size={18}
+              color={colors.mutedForeground}
+            />
           </Pressable>
         </View>
 
@@ -583,6 +643,22 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  privacyCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginHorizontal: 16,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  privacyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },

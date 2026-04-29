@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -10,7 +11,6 @@ import {
 import {
   BlockchainBadge,
   PriorityBadge,
-  SeverityBadge,
   StatusBadge,
 } from "@/components/Badges";
 import { CATEGORY_MAP } from "@/constants/categories";
@@ -29,10 +29,17 @@ function timeAgo(ts: number) {
   return `il y a ${days} j`;
 }
 
-export function ReportCard({ report }: { report: Report }) {
+export function ReportCard({
+  report,
+  compact = false,
+}: {
+  report: Report;
+  compact?: boolean;
+}) {
   const colors = useColors();
   const router = useRouter();
   const cat = CATEGORY_MAP[report.category];
+  const photo = report.photoUris[0];
 
   return (
     <Pressable
@@ -47,18 +54,27 @@ export function ReportCard({ report }: { report: Report }) {
       ]}
     >
       <View style={styles.headerRow}>
-        <View
-          style={[styles.iconWrap, { backgroundColor: cat.hue + "15" }]}
-        >
-          <Feather name={cat.icon} size={18} color={cat.hue} />
-        </View>
+        {photo ? (
+          <Image source={{ uri: photo }} style={styles.thumb} />
+        ) : (
+          <View style={[styles.iconWrap, { backgroundColor: cat.hue + "15" }]}>
+            <Feather name={cat.icon} size={20} color={cat.hue} />
+          </View>
+        )}
         <View style={{ flex: 1 }}>
-          <Text
-            style={[styles.category, { color: colors.foreground }]}
-            numberOfLines={1}
-          >
-            {cat.label} · {report.quartier}
-          </Text>
+          <View style={styles.titleRow}>
+            <Text
+              style={[styles.numberPill, { color: colors.mutedForeground }]}
+            >
+              #{report.number}
+            </Text>
+            <Text
+              style={[styles.category, { color: colors.foreground }]}
+              numberOfLines={1}
+            >
+              {cat.label} · {report.quartier}
+            </Text>
+          </View>
           <Text style={[styles.time, { color: colors.mutedForeground }]}>
             {timeAgo(report.createdAt)} · {report.authorPseudo}
           </Text>
@@ -66,16 +82,17 @@ export function ReportCard({ report }: { report: Report }) {
         <PriorityBadge priority={report.ai.priority} />
       </View>
 
-      <Text
-        style={[styles.description, { color: colors.foreground }]}
-        numberOfLines={2}
-      >
-        {report.description}
-      </Text>
+      {!compact ? (
+        <Text
+          style={[styles.description, { color: colors.foreground }]}
+          numberOfLines={2}
+        >
+          {report.description}
+        </Text>
+      ) : null}
 
       <View style={styles.badgeRow}>
         <StatusBadge status={report.status} size="sm" />
-        <SeverityBadge severity={report.ai.severity} />
         {report.ai.duplicates > 0 ? (
           <View
             style={[
@@ -97,9 +114,7 @@ export function ReportCard({ report }: { report: Report }) {
         ) : null}
       </View>
 
-      <View
-        style={[styles.footer, { borderTopColor: colors.border }]}
-      >
+      <View style={[styles.footer, { borderTopColor: colors.border }]}>
         <View style={styles.footerLeft}>
           <Feather name="map-pin" size={12} color={colors.mutedForeground} />
           <Text
@@ -142,15 +157,32 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
+  },
+  thumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#eee",
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 6,
+  },
+  numberPill: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 11,
+    letterSpacing: 0.5,
   },
   category: {
     fontFamily: "Inter_700Bold",
     fontSize: 14,
+    flex: 1,
   },
   time: {
     fontFamily: "Inter_400Regular",

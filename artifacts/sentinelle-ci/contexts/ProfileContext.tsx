@@ -10,10 +10,11 @@ import React, {
 
 import type { CitizenProfile } from "@/types/report";
 
-const STORAGE_KEY = "sentinelle.profile.v1";
+const STORAGE_KEY = "sentinelle.profile.v2";
 
 const DEFAULT_PROFILE: CitizenProfile = {
-  pseudo: "Citoyen Sentinelle",
+  pseudo: "Koffi A.",
+  firstName: "Koffi",
   commune: "Cocody",
   reputation: 248,
   level: "Sentinelle de quartier",
@@ -21,11 +22,13 @@ const DEFAULT_PROFILE: CitizenProfile = {
   reportsCount: 0,
   resolvedCount: 0,
   badges: ["Premier signalement", "Témoin fiable"],
+  anonymousMode: false,
 };
 
 type ProfileContextValue = {
   profile: CitizenProfile;
   updateProfile: (patch: Partial<CitizenProfile>) => Promise<void>;
+  toggleAnonymous: () => Promise<void>;
   addReputation: (amount: number) => Promise<void>;
   incrementReports: () => Promise<void>;
 };
@@ -77,6 +80,10 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     [persist, profile],
   );
 
+  const toggleAnonymous = useCallback(async () => {
+    await persist({ ...profile, anonymousMode: !profile.anonymousMode });
+  }, [persist, profile]);
+
   const addReputation = useCallback(
     async (amount: number) => {
       const rep = Math.max(0, profile.reputation + amount);
@@ -92,8 +99,14 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   }, [persist, profile]);
 
   const value = useMemo(
-    () => ({ profile, updateProfile, addReputation, incrementReports }),
-    [profile, updateProfile, addReputation, incrementReports],
+    () => ({
+      profile,
+      updateProfile,
+      toggleAnonymous,
+      addReputation,
+      incrementReports,
+    }),
+    [profile, updateProfile, toggleAnonymous, addReputation, incrementReports],
   );
 
   return (

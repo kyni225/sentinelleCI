@@ -13,16 +13,18 @@ import { analyzeReport, generateBlockchainTx } from "@/lib/ai";
 import { SEED_REPORTS } from "@/lib/seed";
 import type { Report } from "@/types/report";
 
-const STORAGE_KEY = "sentinelle.reports.v1";
+const STORAGE_KEY = "sentinelle.reports.v2";
 
 type NewReportInput = {
   category: CategoryId;
   description: string;
-  photoUri: string | null;
+  photoUris: string[];
   quartier: string;
   address: string;
   latitude: number;
   longitude: number;
+  authorPseudo: string;
+  isAnonymous: boolean;
 };
 
 type ReportsContextValue = {
@@ -30,6 +32,7 @@ type ReportsContextValue = {
   loading: boolean;
   createReport: (input: NewReportInput) => Promise<Report>;
   getReport: (id: string) => Report | undefined;
+  getReportByNumber: (number: string) => Report | undefined;
   upvote: (id: string) => Promise<void>;
   advanceStatus: (id: string, status: Status, note?: string) => Promise<void>;
   countSimilar: (
@@ -38,9 +41,13 @@ type ReportsContextValue = {
     description: string,
   ) => number;
   resetSeed: () => Promise<void>;
+  crisisMode: boolean;
+  crisisQuartiers: string[];
 };
 
 const ReportsContext = createContext<ReportsContextValue | null>(null);
+
+const HOUR = 60 * 60 * 1000;
 
 export function ReportsProvider({ children }: { children: React.ReactNode }) {
   const [reports, setReports] = useState<Report[]>([]);
@@ -90,6 +97,18 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
     [reports],
   );
 
+  const nextNumber = useCallback(() => {
+    let max = 0;
+    for (const r of reports) {
+      const m = r.number.match(/^S(\d+)$/);
+      if (m && m[1]) {
+        const n = parseInt(m[1], 10);
+        if (n > max) max = n;
+      }
+    }
+    return `S${String(max + 1).padStart(3, "0")}`;
+  }, [reports]);
+
   const createReport = useCallback(
     async (input: NewReportInput) => {
       const similar = countSimilar(
@@ -101,21 +120,23 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
         description: input.description,
         category: input.category,
         quartier: input.quartier,
-        hasPhoto: !!input.photoUri,
+        hasPhoto: input.photoUris.length > 0,
         similarCount: similar,
       });
       const now = Date.now();
       const newReport: Report = {
         id: `${now}_${Math.random().toString(36).slice(2, 8)}`,
+        number: nextNumber(),
         category: input.category,
         description: input.description,
-        photoUri: input.photoUri,
+        photoUris: input.photoUris,
         quartier: input.quartier,
         address: input.address,
         latitude: input.latitude,
         longitude: input.longitude,
         createdAt: now,
-        authorPseudo: "Vous",
+        authorPseudo: input.isAnonymous ? "Citoyen anonyme" : input.authorPseudo,
+        isAnonymous: input.isAnonymous,
         status: "soumis",
         history: [{ status: "soumis", at: now }],
         ai,
@@ -127,11 +148,16 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
       await persist(next);
       return newReport;
     },
-    [countSimilar, persist, reports],
+    [countSimilar, nextNumber, persist, reports],
   );
 
   const getReport = useCallback(
     (id: string) => reports.find((r) => r.id === id),
+    [reports],
+  );
+
+  const getReportByNumber = useCallback(
+    (number: string) => reports.find((r) => r.number === number),
     [reports],
   );
 
@@ -164,26 +190,50 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
     await persist(SEED_REPORTS);
   }, [persist]);
 
+  const { crisisMode, crisisQuartiers } = useMemo(() => {
+    const since = Date.now() - 24 * HOUR;
+    const recentP1 = reports.filter(
+      (r) => r.ai.priority === "P1" && r.createdAt >= since,
+    );
+    const counts: Record<string, number> = {};
+    for (const r of recentP1) {
+      counts[r.quartier] = (counts[r.quartier] ?? 0) + 1;
+    }
+    const triggered = Object.entries(counts)
+      .filter(([, n]) => n >= 1)
+      .map(([q]) => q);
+    return {
+      crisisMode: recentP1.length >= 2,
+      crisisQuartiers: triggered,
+    };
+  }, [reports]);
+
   const value = useMemo(
     () => ({
       reports,
       loading,
       createReport,
       getReport,
+      getReportByNumber,
       upvote,
       advanceStatus,
       countSimilar,
       resetSeed,
+      crisisMode,
+      crisisQuartiers,
     }),
     [
       reports,
       loading,
       createReport,
       getReport,
+      getReportByNumber,
       upvote,
       advanceStatus,
       countSimilar,
       resetSeed,
+      crisisMode,
+      crisisQuartiers,
     ],
   );
 

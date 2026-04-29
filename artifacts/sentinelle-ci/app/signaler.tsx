@@ -24,6 +24,8 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { useReports } from "@/contexts/ReportsContext";
 import { useColors } from "@/hooks/useColors";
 
+const MAX_PHOTOS = 3;
+
 export default function SignalerScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -31,7 +33,7 @@ export default function SignalerScreen() {
   const { addReputation, incrementReports, profile } = useProfile();
 
   const [category, setCategory] = useState<CategoryId | null>(null);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [description, setDescription] = useState("");
   const [quartier, setQuartier] = useState<string>(profile.commune);
   const [address, setAddress] = useState("");
@@ -44,7 +46,37 @@ export default function SignalerScreen() {
   const canSubmit =
     category !== null && description.trim().length >= 10 && !!quartier;
 
+  function cancel() {
+    if (
+      category !== null ||
+      photoUris.length > 0 ||
+      description.length > 0
+    ) {
+      Alert.alert(
+        "Annuler le signalement ?",
+        "Les informations saisies seront perdues.",
+        [
+          { text: "Continuer", style: "cancel" },
+          {
+            text: "Annuler",
+            style: "destructive",
+            onPress: () => router.back(),
+          },
+        ],
+      );
+    } else {
+      router.back();
+    }
+  }
+
   async function pickPhoto(fromCamera: boolean) {
+    if (photoUris.length >= MAX_PHOTOS) {
+      Alert.alert(
+        "Maximum atteint",
+        `Vous pouvez ajouter jusqu'à ${MAX_PHOTOS} photos.`,
+      );
+      return;
+    }
     try {
       if (fromCamera) {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
@@ -60,7 +92,7 @@ export default function SignalerScreen() {
           allowsEditing: false,
         });
         if (!result.canceled && result.assets[0]) {
-          setPhotoUri(result.assets[0].uri);
+          setPhotoUris((p) => [...p, result.assets[0]!.uri]);
           await tryHaptic("light");
         }
       } else {
@@ -72,18 +104,26 @@ export default function SignalerScreen() {
           );
           return;
         }
+        const remaining = MAX_PHOTOS - photoUris.length;
         const result = await ImagePicker.launchImageLibraryAsync({
           quality: 0.8,
           allowsEditing: false,
+          allowsMultipleSelection: remaining > 1,
+          selectionLimit: remaining,
         });
-        if (!result.canceled && result.assets[0]) {
-          setPhotoUri(result.assets[0].uri);
+        if (!result.canceled && result.assets) {
+          const uris = result.assets.map((a) => a.uri).slice(0, remaining);
+          setPhotoUris((p) => [...p, ...uris]);
           await tryHaptic("light");
         }
       }
-    } catch (e) {
+    } catch {
       Alert.alert("Erreur", "Impossible d'accéder à la photo.");
     }
+  }
+
+  function removePhoto(index: number) {
+    setPhotoUris((p) => p.filter((_, i) => i !== index));
   }
 
   async function detectLocation() {
@@ -144,7 +184,7 @@ export default function SignalerScreen() {
         }
       }
       await tryHaptic("light");
-    } catch (e) {
+    } catch {
       Alert.alert("Erreur", "Géolocalisation indisponible.");
     } finally {
       setLocating(false);
@@ -155,7 +195,9 @@ export default function SignalerScreen() {
     if (Platform.OS === "web") return;
     try {
       if (style === "success") {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        await Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        );
       } else {
         await Haptics.impactAsync(
           style === "light"
@@ -184,11 +226,13 @@ export default function SignalerScreen() {
       const report = await createReport({
         category,
         description: description.trim(),
-        photoUri,
+        photoUris,
         quartier,
         address: finalAddress,
         latitude: finalCoords.lat,
         longitude: finalCoords.lng,
+        authorPseudo: profile.pseudo,
+        isAnonymous: profile.anonymousMode,
       });
       await incrementReports();
       await addReputation(15);
@@ -197,7 +241,7 @@ export default function SignalerScreen() {
         pathname: "/confirmation",
         params: { id: report.id },
       });
-    } catch (e) {
+    } catch {
       Alert.alert("Erreur", "Impossible d'envoyer le signalement.");
     } finally {
       setSubmitting(false);
@@ -212,12 +256,34 @@ export default function SignalerScreen() {
         contentContainerStyle={{ paddingBottom: 140 }}
       >
         <View style={styles.intro}>
-          <Text style={[styles.kicker, { color: colors.accent }]}>
-            ÉTAPE PAR ÉTAPE
-          </Text>
-          <Text style={[styles.title, { color: colors.foreground }]}>
-            Signalez un problème
-          </Text>
+          <View style={styles.introTopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.kicker, { color: colors.accent }]}>
+                ÉTAPE PAR ÉTAPE
+              </Text>
+              <Text style={[styles.title, { color: colors.foreground }]}>
+                Signaler un problème
+              </Text>
+            </View>
+            <Pressable
+              onPress={cancel}
+              style={[
+                styles.cancelBtn,
+                { borderColor: colors.border, backgroundColor: colors.card },
+              ]}
+            >
+              <Feather name="x" size={16} color={colors.mutedForeground} />
+              <Text
+                style={{
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_600SemiBold",
+                  fontSize: 12,
+                }}
+              >
+                Annuler
+              </Text>
+            </Pressable>
+          </View>
           <Text
             style={[styles.subtitle, { color: colors.mutedForeground }]}
           >
@@ -244,6 +310,11 @@ export default function SignalerScreen() {
                     },
                   ]}
                 >
+                  {active ? (
+                    <View style={styles.catCheck}>
+                      <Feather name="check" size={11} color={c.hue} />
+                    </View>
+                  ) : null}
                   <Feather
                     name={c.icon}
                     size={20}
@@ -265,23 +336,59 @@ export default function SignalerScreen() {
           </View>
         </Section>
 
-        <Section number={2} title="Photo" icon="camera">
-          {photoUri ? (
-            <View
-              style={[styles.photoCard, { borderColor: colors.border }]}
+        <Section
+          number={2}
+          title={`Photos (${photoUris.length}/${MAX_PHOTOS})`}
+          icon="camera"
+        >
+          {photoUris.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 10, paddingRight: 10 }}
+              style={{ marginBottom: 10 }}
             >
-              <Image source={{ uri: photoUri }} style={styles.photo} />
-              <Pressable
-                onPress={() => setPhotoUri(null)}
-                style={[
-                  styles.removePhoto,
-                  { backgroundColor: colors.foreground },
-                ]}
-              >
-                <Feather name="x" size={14} color={colors.background} />
-              </Pressable>
-            </View>
-          ) : (
+              {photoUris.map((uri, i) => (
+                <View
+                  key={i}
+                  style={[styles.photoCard, { borderColor: colors.border }]}
+                >
+                  <Image source={{ uri }} style={styles.photo} />
+                  <Pressable
+                    onPress={() => removePhoto(i)}
+                    style={[
+                      styles.removePhoto,
+                      { backgroundColor: colors.foreground },
+                    ]}
+                  >
+                    <Feather name="x" size={12} color={colors.background} />
+                  </Pressable>
+                </View>
+              ))}
+              {photoUris.length < MAX_PHOTOS ? (
+                <Pressable
+                  onPress={() => pickPhoto(true)}
+                  style={[
+                    styles.addMoreCard,
+                    { borderColor: colors.border, backgroundColor: colors.card },
+                  ]}
+                >
+                  <Feather name="plus" size={20} color={colors.primary} />
+                  <Text
+                    style={{
+                      color: colors.primary,
+                      fontFamily: "Inter_600SemiBold",
+                      fontSize: 11,
+                      marginTop: 4,
+                    }}
+                  >
+                    Ajouter
+                  </Text>
+                </Pressable>
+              ) : null}
+            </ScrollView>
+          ) : null}
+          {photoUris.length === 0 ? (
             <View style={styles.photoActions}>
               <PhotoButton
                 icon="camera"
@@ -295,7 +402,7 @@ export default function SignalerScreen() {
                 onPress={() => pickPhoto(false)}
               />
             </View>
-          )}
+          ) : null}
           <Text
             style={{
               color: colors.mutedForeground,
@@ -305,6 +412,7 @@ export default function SignalerScreen() {
             }}
           >
             Une photo permet à notre IA d'évaluer la gravité automatiquement.
+            Jusqu'à {MAX_PHOTOS} photos par signalement.
           </Text>
         </Section>
 
@@ -408,7 +516,7 @@ export default function SignalerScreen() {
           <TextInput
             value={description}
             onChangeText={setDescription}
-            placeholder="Décrivez le problème (lieu, gravité, depuis quand...)"
+            placeholder="Décrivez le problème : où, depuis quand, niveau de danger... Plus c'est précis, plus l'IA aide la mairie à prioriser."
             placeholderTextColor={colors.mutedForeground}
             multiline
             numberOfLines={5}
@@ -435,6 +543,27 @@ export default function SignalerScreen() {
             {description.length}/10 caractères minimum
           </Text>
         </Section>
+
+        {profile.anonymousMode ? (
+          <View
+            style={[
+              styles.anonNote,
+              { backgroundColor: colors.primary + "10", borderColor: colors.primary },
+            ]}
+          >
+            <Feather name="eye-off" size={14} color={colors.primary} />
+            <Text
+              style={{
+                color: colors.primary,
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 12,
+                flex: 1,
+              }}
+            >
+              Mode anonyme actif · ce signalement sera publié sans votre nom.
+            </Text>
+          </View>
+        ) : null}
 
         <View
           style={[
@@ -598,6 +727,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
   },
+  introTopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
   kicker: {
     fontSize: 11,
     letterSpacing: 1.5,
@@ -613,6 +747,16 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     marginTop: 4,
     lineHeight: 19,
+  },
+  cancelBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginTop: 4,
   },
   section: {
     paddingHorizontal: 16,
@@ -644,6 +788,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
+  },
+  catCheck: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
   },
   photoActions: {
     flexDirection: "row",
@@ -664,18 +820,29 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     position: "relative",
+    width: 130,
+    height: 130,
   },
   photo: {
     width: "100%",
-    height: 180,
+    height: "100%",
   },
   removePhoto: {
     position: "absolute",
-    top: 10,
-    right: 10,
-    width: 28,
-    height: 28,
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addMoreCard: {
+    width: 130,
+    height: 130,
     borderRadius: 14,
+    borderWidth: 1,
+    borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -712,9 +879,19 @@ const styles = StyleSheet.create({
     minHeight: 110,
     textAlignVertical: "top",
   },
+  anonNote: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
   aiNote: {
     marginHorizontal: 16,
-    marginTop: 22,
+    marginTop: 16,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,

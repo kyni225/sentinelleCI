@@ -1,12 +1,14 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import {
   Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -42,9 +44,11 @@ export default function ReportDetail() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getReport, upvote } = useReports();
   const report = id ? getReport(id) : undefined;
+  const [photoIdx, setPhotoIdx] = useState(0);
 
   if (!report) {
     return (
@@ -68,6 +72,7 @@ export default function ReportDetail() {
 
   const cat = CATEGORY_MAP[report.category];
   const currentStepIdx = STATUS_ORDER.indexOf(report.status);
+  const photoWidth = Math.min(width, 600);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -84,14 +89,52 @@ export default function ReportDetail() {
             <Feather name={cat.icon} size={26} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.heroLabel}>{cat.label}</Text>
+            <View style={styles.heroNumberRow}>
+              <Text style={styles.heroNumber}>#{report.number}</Text>
+              <Text style={styles.heroLabel}>{cat.label}</Text>
+            </View>
             <Text style={styles.heroQuartier}>{report.quartier}</Text>
           </View>
           <PriorityBadge priority={report.ai.priority} />
         </LinearGradient>
 
-        {report.photoUri ? (
-          <Image source={{ uri: report.photoUri }} style={styles.photo} />
+        {report.photoUris.length > 0 ? (
+          <View>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) =>
+                setPhotoIdx(
+                  Math.round(e.nativeEvent.contentOffset.x / photoWidth),
+                )
+              }
+            >
+              {report.photoUris.map((uri, i) => (
+                <Image
+                  key={i}
+                  source={{ uri }}
+                  style={[styles.photo, { width: photoWidth }]}
+                />
+              ))}
+            </ScrollView>
+            {report.photoUris.length > 1 ? (
+              <View style={styles.dots}>
+                {report.photoUris.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.dot,
+                      {
+                        backgroundColor:
+                          i === photoIdx ? colors.foreground : colors.border,
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
         ) : null}
 
         <View style={styles.section}>
@@ -171,7 +214,11 @@ export default function ReportDetail() {
                 confirmé.
               </Text>
             </View>
-            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+            <Feather
+              name="chevron-right"
+              size={18}
+              color={colors.mutedForeground}
+            />
           </Pressable>
         </View>
 
@@ -362,6 +409,11 @@ export default function ReportDetail() {
             </Text>
           </View>
           <KeyValue
+            label="Numéro de signalement"
+            value={`#${report.number}`}
+            mono
+          />
+          <KeyValue
             label="Hash de transaction"
             value={shortHash(report.blockchain.txHash)}
             mono
@@ -424,7 +476,11 @@ export default function ReportDetail() {
               Voir tous les signalements et statistiques du quartier
             </Text>
           </View>
-          <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          <Feather
+            name="chevron-right"
+            size={18}
+            color={colors.mutedForeground}
+          />
         </Pressable>
       </ScrollView>
     </View>
@@ -435,7 +491,13 @@ function SectionTitle({ title }: { title: string }) {
   const colors = useColors();
   return (
     <View style={styles.sectionTitleWrap}>
-      <Text style={{ color: colors.foreground, fontFamily: "Inter_700Bold", fontSize: 16 }}>
+      <Text
+        style={{
+          color: colors.foreground,
+          fontFamily: "Inter_700Bold",
+          fontSize: 16,
+        }}
+      >
         {title}
       </Text>
     </View>
@@ -526,11 +588,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.3)",
   },
+  heroNumberRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 8,
+  },
+  heroNumber: {
+    color: "#fff",
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+    letterSpacing: 0.5,
+  },
   heroLabel: {
     color: "#FFFFFFCC",
     fontFamily: "Inter_500Medium",
     fontSize: 12,
-    letterSpacing: 0.5,
   },
   heroQuartier: {
     color: "#fff",
@@ -539,8 +611,18 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   photo: {
-    width: "100%",
     height: 220,
+  },
+  dots: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 8,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   section: {
     paddingHorizontal: 16,

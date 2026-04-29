@@ -4,25 +4,27 @@ import { analyzeReport, generateBlockchainTx } from "@/lib/ai";
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
-function id(seed: string) {
-  return `seed_${seed}`;
+function num(n: number) {
+  return `S${String(n).padStart(3, "0")}`;
 }
 
 const NOW = Date.now();
 
 export const SEED_REPORTS: Report[] = [
   {
-    id: id("r1"),
+    id: "seed_r1",
+    number: num(247),
     category: "routes",
     description:
       "Énorme nid de poule au carrefour, un taxi a déjà eu un accident hier soir, c'est devenu très dangereux.",
-    photoUri: null,
+    photoUris: [],
     quartier: "Cocody",
     address: "Rue des Jardins, près du carrefour Saint-Jean",
     latitude: 5.359,
     longitude: -3.989,
     createdAt: NOW - 6 * HOUR,
     authorPseudo: "Aïssata K.",
+    isAnonymous: false,
     status: "en_cours",
     history: [
       { status: "soumis", at: NOW - 6 * HOUR },
@@ -45,17 +47,19 @@ export const SEED_REPORTS: Report[] = [
     isMine: false,
   },
   {
-    id: id("r2"),
+    id: "seed_r2",
+    number: num(246),
     category: "eclairage",
     description:
       "Tous les lampadaires de la rue sont éteints depuis 4 jours, on n'y voit rien la nuit.",
-    photoUri: null,
+    photoUris: [],
     quartier: "Yopougon",
     address: "Rue Princesse, secteur Niangon",
     latitude: 5.337,
     longitude: -4.082,
     createdAt: NOW - 2 * DAY,
     authorPseudo: "Moussa T.",
+    isAnonymous: false,
     status: "valide",
     history: [
       { status: "soumis", at: NOW - 2 * DAY },
@@ -73,17 +77,19 @@ export const SEED_REPORTS: Report[] = [
     isMine: false,
   },
   {
-    id: id("r3"),
+    id: "seed_r3",
+    number: num(245),
     category: "eau",
     description:
       "Fuite d'eau importante sur la conduite principale, l'eau coule sans arrêt depuis ce matin.",
-    photoUri: null,
+    photoUris: [],
     quartier: "Plateau",
     address: "Boulevard de la République",
     latitude: 5.32,
     longitude: -4.022,
     createdAt: NOW - 8 * HOUR,
     authorPseudo: "Yao B.",
+    isAnonymous: false,
     status: "soumis",
     history: [{ status: "soumis", at: NOW - 8 * HOUR }],
     ai: analyzeReport({
@@ -98,17 +104,19 @@ export const SEED_REPORTS: Report[] = [
     isMine: false,
   },
   {
-    id: id("r4"),
+    id: "seed_r4",
+    number: num(244),
     category: "dechets",
     description:
       "Ordures jamais ramassées depuis deux semaines, l'odeur est insupportable et attire les rats.",
-    photoUri: null,
+    photoUris: [],
     quartier: "Adjamé",
     address: "Marché Gouro, allée 3",
     latitude: 5.359,
     longitude: -4.026,
     createdAt: NOW - 5 * DAY,
     authorPseudo: "Fatou D.",
+    isAnonymous: false,
     status: "resolu",
     history: [
       { status: "soumis", at: NOW - 5 * DAY },
@@ -128,17 +136,19 @@ export const SEED_REPORTS: Report[] = [
     isMine: false,
   },
   {
-    id: id("r5"),
+    id: "seed_r5",
+    number: num(243),
     category: "ecoles",
     description:
       "Le mur de l'école primaire menace de s'effondrer sur la cour de récréation des enfants.",
-    photoUri: null,
+    photoUris: [],
     quartier: "Abobo",
     address: "EPP Abobo Sagbé",
     latitude: 5.428,
     longitude: -4.046,
     createdAt: NOW - 12 * HOUR,
     authorPseudo: "Kouadio N.",
+    isAnonymous: false,
     status: "valide",
     history: [
       { status: "soumis", at: NOW - 12 * HOUR },
@@ -156,17 +166,19 @@ export const SEED_REPORTS: Report[] = [
     isMine: false,
   },
   {
-    id: id("r6"),
+    id: "seed_r6",
+    number: num(242),
     category: "securite",
     description:
       "Câble électrique dénudé qui pend au-dessus du trottoir, risque d'électrocution.",
-    photoUri: null,
+    photoUris: [],
     quartier: "Treichville",
     address: "Avenue 16, Rue 22",
     latitude: 5.296,
     longitude: -4.0,
     createdAt: NOW - 3 * HOUR,
     authorPseudo: "Citoyen anonyme",
+    isAnonymous: true,
     status: "soumis",
     history: [{ status: "soumis", at: NOW - 3 * HOUR }],
     ai: analyzeReport({
@@ -181,17 +193,19 @@ export const SEED_REPORTS: Report[] = [
     isMine: false,
   },
   {
-    id: id("r7"),
+    id: "seed_r7",
+    number: num(241),
     category: "routes",
     description:
       "Plusieurs trous sur la chaussée, les voitures roulent en zigzag pour les éviter.",
-    photoUri: null,
+    photoUris: [],
     quartier: "Marcory",
     address: "Boulevard du Gabon",
     latitude: 5.288,
     longitude: -3.989,
     createdAt: NOW - 30 * HOUR,
     authorPseudo: "Sékou L.",
+    isAnonymous: false,
     status: "en_cours",
     history: [
       { status: "soumis", at: NOW - 30 * HOUR },
@@ -210,16 +224,18 @@ export const SEED_REPORTS: Report[] = [
     isMine: false,
   },
   {
-    id: id("r8"),
+    id: "seed_r8",
+    number: num(240),
     category: "eclairage",
     description: "Lampadaire grillé devant l'école.",
-    photoUri: null,
+    photoUris: [],
     quartier: "Cocody",
     address: "Rue des Jasmins",
     latitude: 5.362,
     longitude: -3.985,
     createdAt: NOW - 4 * DAY,
     authorPseudo: "Marie A.",
+    isAnonymous: false,
     status: "resolu",
     history: [
       { status: "soumis", at: NOW - 4 * DAY },

@@ -44,9 +44,7 @@ export default function ConfirmationScreen() {
 
   if (!report) {
     return (
-      <View
-        style={[styles.root, { backgroundColor: colors.background }]}
-      >
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
         <Text
           style={{
             color: colors.foreground,
@@ -72,7 +70,9 @@ export default function ConfirmationScreen() {
         }}
       >
         <View style={styles.successHeader}>
-          <View style={[styles.checkCircle, { backgroundColor: colors.success }]}>
+          <View
+            style={[styles.checkCircle, { backgroundColor: colors.success }]}
+          >
             <Feather name="check" size={36} color="#fff" />
           </View>
           <Text style={[styles.successTitle, { color: colors.foreground }]}>
@@ -81,13 +81,52 @@ export default function ConfirmationScreen() {
           <Text
             style={[styles.successSub, { color: colors.mutedForeground }]}
           >
-            Merci d'avoir contribué. Voici l'analyse IA en temps réel.
+            Merci d'avoir contribué. Voici votre récépissé.
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.numberCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text
+            style={{
+              color: colors.mutedForeground,
+              fontFamily: "Inter_500Medium",
+              fontSize: 11,
+              letterSpacing: 1.5,
+            }}
+          >
+            NUMÉRO DE SIGNALEMENT
+          </Text>
+          <Text
+            style={{
+              color: colors.foreground,
+              fontFamily: "Inter_700Bold",
+              fontSize: 36,
+              marginTop: 4,
+              letterSpacing: 1,
+            }}
+          >
+            #{report.number}
+          </Text>
+          <Text
+            style={{
+              color: colors.mutedForeground,
+              fontFamily: "Inter_400Regular",
+              fontSize: 12,
+              marginTop: 4,
+            }}
+          >
+            Conservez ce numéro pour suivre votre signalement à tout moment.
           </Text>
         </View>
 
         <View style={styles.aiCard}>
           <LinearGradient
-            colors={[colors.primary, "#2A4A75"]}
+            colors={[colors.primary, colors.primaryDark]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.aiGradient}
@@ -140,6 +179,17 @@ export default function ConfirmationScreen() {
             </View>
 
             <Text style={styles.aiSummary}>{report.ai.summary}</Text>
+
+            {report.ai.duplicates > 0 ? (
+              <View style={styles.dupNotice}>
+                <Feather name="copy" size={12} color="#fff" />
+                <Text style={styles.dupNoticeText}>
+                  Ce signalement a été regroupé avec {report.ai.duplicates}{" "}
+                  alerte{report.ai.duplicates > 1 ? "s" : ""} similaire
+                  {report.ai.duplicates > 1 ? "s" : ""}.
+                </Text>
+              </View>
+            ) : null}
           </LinearGradient>
         </View>
 
@@ -246,68 +296,6 @@ export default function ConfirmationScreen() {
           </View>
         </View>
 
-        <View style={styles.recap}>
-          <Text style={[styles.recapTitle, { color: colors.foreground }]}>
-            Récapitulatif
-          </Text>
-          <View
-            style={[
-              styles.recapCard,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            <View style={styles.recapRow}>
-              <View
-                style={[
-                  styles.recapIcon,
-                  { backgroundColor: cat.hue + "15" },
-                ]}
-              >
-                <Feather name={cat.icon} size={16} color={cat.hue} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    color: colors.foreground,
-                    fontFamily: "Inter_700Bold",
-                    fontSize: 14,
-                  }}
-                >
-                  {cat.label}
-                </Text>
-                <Text
-                  style={{
-                    color: colors.mutedForeground,
-                    fontFamily: "Inter_400Regular",
-                    fontSize: 12,
-                    marginTop: 1,
-                  }}
-                  numberOfLines={1}
-                >
-                  {report.address} · {report.quartier}
-                </Text>
-              </View>
-            </View>
-            <Text
-              style={{
-                color: colors.foreground,
-                fontFamily: "Inter_400Regular",
-                fontSize: 14,
-                lineHeight: 19,
-                marginTop: 12,
-              }}
-              numberOfLines={3}
-            >
-              {report.description}
-            </Text>
-            <View style={styles.recapBadges}>
-              <PriorityBadge priority={report.ai.priority} />
-              <SeverityBadge severity={report.ai.severity} />
-              <BlockchainBadge short={shortHash(report.blockchain.txHash)} />
-            </View>
-          </View>
-        </View>
-
         <View
           style={[
             styles.repCard,
@@ -358,11 +346,11 @@ export default function ConfirmationScreen() {
               fontSize: 14,
             }}
           >
-            Voir le détail
+            Voir mon signalement
           </Text>
         </Pressable>
         <Pressable
-          onPress={() => router.replace("/(tabs)")}
+          onPress={() => router.replace("/signaler")}
           style={[
             styles.actionSecondary,
             { backgroundColor: colors.background, borderColor: colors.border },
@@ -375,7 +363,7 @@ export default function ConfirmationScreen() {
               fontSize: 14,
             }}
           >
-            Retour à la carte
+            Signaler un autre
           </Text>
         </Pressable>
       </View>
@@ -414,9 +402,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 19,
   },
+  numberCard: {
+    marginHorizontal: 16,
+    marginTop: 18,
+    padding: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+  },
   aiCard: {
     marginHorizontal: 16,
-    marginTop: 20,
+    marginTop: 14,
     borderRadius: 20,
     overflow: "hidden",
   },
@@ -512,6 +508,22 @@ const styles = StyleSheet.create({
     marginTop: 14,
     opacity: 0.9,
   },
+  dupNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    marginTop: 12,
+  },
+  dupNoticeText: {
+    color: "#fff",
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    flex: 1,
+  },
   blockCard: {
     marginHorizontal: 16,
     marginTop: 14,
@@ -552,38 +564,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-  },
-  recap: {
-    paddingHorizontal: 16,
-    marginTop: 22,
-  },
-  recapTitle: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 17,
-    marginBottom: 12,
-  },
-  recapCard: {
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  recapRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  recapIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  recapBadges: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 12,
   },
   repCard: {
     marginHorizontal: 16,

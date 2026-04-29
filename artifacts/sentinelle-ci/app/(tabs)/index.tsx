@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Platform,
   Pressable,
@@ -11,47 +12,44 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  BlockchainBadge,
-  PriorityBadge,
-  StatusBadge,
-} from "@/components/Badges";
-import { StylizedMap } from "@/components/MapView";
-import {
-  CATEGORIES,
-  CATEGORY_MAP,
-  type CategoryId,
-} from "@/constants/categories";
+import { ReportCard } from "@/components/ReportCard";
+import { useProfile } from "@/contexts/ProfileContext";
 import { useReports } from "@/contexts/ReportsContext";
 import { useColors } from "@/hooks/useColors";
-import { shortHash } from "@/lib/ai";
 
-export default function MapScreen() {
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Bonjour";
+  if (h < 18) return "Bon après-midi";
+  return "Bonsoir";
+}
+
+export default function HomeScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { reports } = useReports();
   const insets = useSafeAreaInsets();
-  const [filter, setFilter] = useState<CategoryId | "all">("all");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [crisis, setCrisis] = useState(false);
+  const { profile } = useProfile();
+  const { reports, crisisMode, crisisQuartiers } = useReports();
 
-  const filtered = useMemo(() => {
-    let r = reports;
-    if (filter !== "all") r = r.filter((x) => x.category === filter);
-    if (crisis) r = r.filter((x) => x.ai.priority === "P1");
-    return r;
-  }, [reports, filter, crisis]);
-
-  const selected = selectedId
-    ? reports.find((r) => r.id === selectedId)
-    : null;
-
-  const stats = useMemo(() => {
-    const total = reports.length;
-    const resolved = reports.filter((r) => r.status === "resolu").length;
-    const critical = reports.filter((r) => r.ai.priority === "P1").length;
-    return { total, resolved, critical };
+  const myStats = useMemo(() => {
+    const mine = reports.filter((r) => r.isMine);
+    const enCours = mine.filter(
+      (r) => r.status === "soumis" || r.status === "valide" || r.status === "en_cours",
+    ).length;
+    const resolus = mine.filter((r) => r.status === "resolu").length;
+    return { total: mine.length, enCours, resolus };
   }, [reports]);
+
+  const nearby = useMemo(() => {
+    const sorted = [...reports].sort((a, b) => b.createdAt - a.createdAt);
+    const local = sorted.filter((r) => r.quartier === profile.commune);
+    if (local.length >= 4) return local.slice(0, 5);
+    const others = sorted.filter((r) => r.quartier !== profile.commune);
+    return [...local, ...others].slice(0, 5);
+  }, [reports, profile.commune]);
+
+  const showCrisisInMyArea =
+    crisisMode && crisisQuartiers.includes(profile.commune);
 
   const topPad = Platform.OS === "web" ? Math.max(insets.top, 67) : insets.top;
   const bottomPad =
@@ -62,241 +60,231 @@ export default function MapScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: topPad + 16,
+          paddingTop: topPad,
           paddingBottom: bottomPad,
         }}
       >
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.kicker, { color: colors.accent }]}>
-              SENTINELLECI
-            </Text>
-            <Text style={[styles.title, { color: colors.foreground }]}>
-              Carte publique
-            </Text>
-            <Text
-              style={[styles.subtitle, { color: colors.mutedForeground }]}
-            >
-              Tous les signalements citoyens, vérifiés et tracés sur blockchain.
-            </Text>
+        <LinearGradient
+          colors={[colors.primary, colors.primaryDark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroBg}
+        >
+          <View style={styles.brandRow}>
+            <View style={styles.brandLeft}>
+              <View style={styles.logoDot}>
+                <Feather name="shield" size={14} color={colors.primary} />
+              </View>
+              <Text style={styles.brandName}>SentinelleCI</Text>
+            </View>
+            <View style={styles.communePill}>
+              <Feather name="map-pin" size={11} color="#fff" />
+              <Text style={styles.communeText}>{profile.commune}</Text>
+            </View>
           </View>
+
+          <Text style={styles.greeting}>
+            {getGreeting()}, {profile.firstName}
+          </Text>
+          <Text style={styles.greetingSub}>
+            Votre quartier compte sur vos yeux aujourd'hui.
+          </Text>
+        </LinearGradient>
+
+        {showCrisisInMyArea ? (
           <Pressable
-            onPress={() => setCrisis((v) => !v)}
+            onPress={() => router.push("/carte")}
             style={[
-              styles.crisisToggle,
-              {
-                backgroundColor: crisis ? colors.destructive : colors.card,
-                borderColor: crisis ? colors.destructive : colors.border,
-              },
+              styles.crisisBanner,
+              { backgroundColor: colors.destructive },
             ]}
           >
-            <Feather
-              name="alert-triangle"
-              size={16}
-              color={crisis ? "#fff" : colors.destructive}
-            />
+            <View style={styles.crisisIcon}>
+              <Feather name="alert-triangle" size={18} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.crisisTitle}>Mode crise activé</Text>
+              <Text style={styles.crisisText}>
+                Plusieurs urgences détectées à {profile.commune} ces dernières
+                heures.
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={20} color="#fff" />
+          </Pressable>
+        ) : null}
+
+        <View style={styles.statsRow}>
+          <StatCard
+            label="Mes signalements"
+            value={myStats.total}
+            color={colors.primary}
+            icon="layers"
+          />
+          <StatCard
+            label="En cours"
+            value={myStats.enCours}
+            color={colors.warning}
+            icon="loader"
+          />
+          <StatCard
+            label="Résolus"
+            value={myStats.resolus}
+            color={colors.success}
+            icon="check-circle"
+          />
+        </View>
+
+        <Pressable
+          onPress={() => router.push("/signaler")}
+          style={({ pressed }) => [
+            styles.bigCta,
+            {
+              backgroundColor: colors.accent,
+              opacity: pressed ? 0.9 : 1,
+              transform: [{ scale: pressed ? 0.99 : 1 }],
+              shadowColor: colors.accent,
+            },
+          ]}
+        >
+          <View style={styles.bigCtaIcon}>
+            <Feather name="plus" size={22} color={colors.accent} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bigCtaTitle}>Signaler un problème</Text>
+            <Text style={styles.bigCtaSub}>
+              Photo, lieu, description — 30 secondes
+            </Text>
+          </View>
+          <Feather name="arrow-right" size={20} color="#fff" />
+        </Pressable>
+
+        <View style={styles.quickRow}>
+          <QuickAction
+            icon="map"
+            label="Carte"
+            onPress={() => router.push("/carte")}
+          />
+          <QuickAction
+            icon="inbox"
+            label="Mon suivi"
+            onPress={() => router.push("/mes-signalements")}
+          />
+          <QuickAction
+            icon="bar-chart-2"
+            label={profile.commune}
+            onPress={() => router.push(`/quartier/${profile.commune}`)}
+          />
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+              Près de chez vous
+            </Text>
             <Text
               style={{
-                color: crisis ? "#fff" : colors.destructive,
-                fontFamily: "Inter_700Bold",
-                fontSize: 12,
+                color: colors.mutedForeground,
+                fontFamily: "Inter_400Regular",
+                fontSize: 13,
+                marginTop: 2,
               }}
             >
-              {crisis ? "Mode crise actif" : "Mode crise"}
+              Signalements récents à {profile.commune} et alentours
+            </Text>
+          </View>
+          <Pressable onPress={() => router.push("/carte")}>
+            <Text
+              style={{
+                color: colors.primary,
+                fontFamily: "Inter_700Bold",
+                fontSize: 13,
+              }}
+            >
+              Voir tout
             </Text>
           </Pressable>
         </View>
 
-        <View style={styles.statsRow}>
-          <StatBox
-            label="Signalements"
-            value={stats.total}
-            icon="layers"
-            color={colors.primary}
-          />
-          <StatBox
-            label="Résolus"
-            value={stats.resolved}
-            icon="check-circle"
-            color={colors.success}
-          />
-          <StatBox
-            label="Urgences IA"
-            value={stats.critical}
-            icon="zap"
-            color={colors.destructive}
-          />
-        </View>
-
-        <View style={styles.filtersWrap}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filtersContent}
-          >
-            <FilterChip
-              label="Tout"
-              icon="grid"
-              active={filter === "all"}
-              onPress={() => setFilter("all")}
-              accent={colors.primary}
-            />
-            {CATEGORIES.map((c) => (
-              <FilterChip
-                key={c.id}
-                label={c.label}
-                icon={c.icon}
-                active={filter === c.id}
-                onPress={() => setFilter(c.id)}
-                accent={c.hue}
-              />
-            ))}
-          </ScrollView>
-        </View>
-
-        <View style={styles.mapWrap}>
-          <StylizedMap
-            reports={filtered}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-          />
-        </View>
-
-        {selected ? (
-          <View
-            style={[
-              styles.selectedCard,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            <View style={styles.selectedTop}>
+        <View style={styles.list}>
+          {nearby.length === 0 ? (
+            <View
+              style={[
+                styles.emptyState,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
               <View
                 style={[
-                  styles.selectedIcon,
-                  {
-                    backgroundColor:
-                      CATEGORY_MAP[selected.category].hue + "15",
-                  },
+                  styles.emptyIcon,
+                  { backgroundColor: colors.surfaceAlt },
                 ]}
               >
-                <Feather
-                  name={CATEGORY_MAP[selected.category].icon}
-                  size={18}
-                  color={CATEGORY_MAP[selected.category].hue}
-                />
+                <Feather name="eye" size={22} color={colors.primary} />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[
-                    styles.selectedTitle,
-                    { color: colors.foreground },
-                  ]}
-                >
-                  {CATEGORY_MAP[selected.category].label} · {selected.quartier}
-                </Text>
-                <Text
-                  style={{
-                    color: colors.mutedForeground,
-                    fontFamily: "Inter_400Regular",
-                    fontSize: 12,
-                    marginTop: 2,
-                  }}
-                  numberOfLines={1}
-                >
-                  {selected.address}
-                </Text>
-              </View>
-              <PriorityBadge priority={selected.ai.priority} />
-            </View>
-            <Text
-              style={[
-                styles.selectedDesc,
-                { color: colors.foreground },
-              ]}
-              numberOfLines={3}
-            >
-              {selected.description}
-            </Text>
-            <View style={styles.selectedRow}>
-              <StatusBadge status={selected.status} size="sm" />
-              <BlockchainBadge short={shortHash(selected.blockchain.txHash)} />
-              <View style={{ flex: 1 }} />
-              <Pressable
-                onPress={() => router.push(`/signalement/${selected.id}`)}
-                style={[
-                  styles.detailBtn,
-                  { backgroundColor: colors.primary },
-                ]}
+              <Text
+                style={{
+                  color: colors.foreground,
+                  fontFamily: "Inter_700Bold",
+                  fontSize: 15,
+                  marginTop: 10,
+                  textAlign: "center",
+                }}
               >
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Inter_700Bold",
-                    fontSize: 13,
-                  }}
-                >
-                  Détails
-                </Text>
-                <Feather name="arrow-right" size={14} color="#fff" />
-              </Pressable>
+                Soyez le premier à signaler dans votre quartier
+              </Text>
+              <Text
+                style={{
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_400Regular",
+                  fontSize: 13,
+                  marginTop: 4,
+                  textAlign: "center",
+                  lineHeight: 18,
+                }}
+              >
+                Aidez la mairie à voir ce qui ne va pas autour de vous.
+              </Text>
             </View>
-          </View>
-        ) : (
-          <View
-            style={[
-              styles.hintCard,
-              { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
-            ]}
-          >
-            <Feather name="info" size={16} color={colors.mutedForeground} />
-            <Text
-              style={{
-                color: colors.mutedForeground,
-                fontFamily: "Inter_500Medium",
-                fontSize: 13,
-                flex: 1,
-              }}
-            >
-              Touchez un point sur la carte pour voir le signalement, ou
-              utilisez les filtres ci-dessus.
-            </Text>
-          </View>
-        )}
+          ) : (
+            nearby.map((r) => <ReportCard key={r.id} report={r} compact />)
+          )}
+        </View>
 
-        <View style={styles.legendCard}>
-          <Text
-            style={[styles.legendTitle, { color: colors.foreground }]}
-          >
-            Comprendre la priorité IA
-          </Text>
-          <Text
-            style={{
-              color: colors.mutedForeground,
-              fontSize: 13,
-              fontFamily: "Inter_400Regular",
-              marginTop: 4,
-              lineHeight: 18,
-            }}
-          >
-            Notre intelligence artificielle classe chaque signalement selon la
-            gravité, le contexte et le nombre de citoyens qui le confirment.
-          </Text>
-          <View style={styles.legendRows}>
-            <LegendRow
-              color="#DC2626"
-              title="P1 — Urgence absolue"
-              text="Risque immédiat pour la vie ou la sécurité publique."
-            />
-            <LegendRow
-              color="#F59E0B"
-              title="P2 — Intervention rapide"
-              text="Doit être traité dans les 48 h pour éviter une dégradation."
-            />
-            <LegendRow
-              color="#475569"
-              title="P3 — Programmé"
-              text="Maintenance courante, sans danger immédiat."
-            />
+        <View
+          style={[
+            styles.trustCard,
+            { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.trustRow}>
+            <View
+              style={[styles.trustIcon, { backgroundColor: colors.primary }]}
+            >
+              <Feather name="link" size={14} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: colors.foreground,
+                  fontFamily: "Inter_700Bold",
+                  fontSize: 13,
+                }}
+              >
+                Vos signalements sont publics et infalsifiables
+              </Text>
+              <Text
+                style={{
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_400Regular",
+                  fontSize: 12,
+                  marginTop: 2,
+                  lineHeight: 16,
+                }}
+              >
+                Chaque alerte est enregistrée sur la blockchain Polygon. La
+                mairie ne peut pas l'effacer.
+              </Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -304,22 +292,22 @@ export default function MapScreen() {
   );
 }
 
-function StatBox({
+function StatCard({
   label,
   value,
-  icon,
   color,
+  icon,
 }: {
   label: string;
   value: number;
-  icon: React.ComponentProps<typeof Feather>["name"];
   color: string;
+  icon: React.ComponentProps<typeof Feather>["name"];
 }) {
   const colors = useColors();
   return (
     <View
       style={[
-        styles.statBox,
+        styles.statCard,
         { backgroundColor: colors.card, borderColor: colors.border },
       ]}
     >
@@ -336,40 +324,39 @@ function StatBox({
   );
 }
 
-function FilterChip({
-  label,
+function QuickAction({
   icon,
-  active,
+  label,
   onPress,
-  accent,
 }: {
-  label: string;
   icon: React.ComponentProps<typeof Feather>["name"];
-  active: boolean;
+  label: string;
   onPress: () => void;
-  accent: string;
 }) {
   const colors = useColors();
-  const bg = active ? accent : colors.card;
-  const fg = active ? "#fff" : colors.foreground;
   return (
     <Pressable
       onPress={onPress}
-      style={[
-        styles.filterChip,
+      style={({ pressed }) => [
+        styles.quickAction,
         {
-          backgroundColor: bg,
-          borderColor: active ? accent : colors.border,
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          opacity: pressed ? 0.85 : 1,
         },
       ]}
     >
-      <Feather name={icon} size={14} color={fg} />
+      <View style={[styles.quickIcon, { backgroundColor: colors.primary + "12" }]}>
+        <Feather name={icon} size={18} color={colors.primary} />
+      </View>
       <Text
         style={{
-          color: fg,
+          color: colors.foreground,
           fontFamily: "Inter_600SemiBold",
-          fontSize: 13,
+          fontSize: 12,
+          marginTop: 8,
         }}
+        numberOfLines={1}
       >
         {label}
       </Text>
@@ -377,76 +364,98 @@ function FilterChip({
   );
 }
 
-function LegendRow({
-  color,
-  title,
-  text,
-}: {
-  color: string;
-  title: string;
-  text: string;
-}) {
-  const colors = useColors();
-  return (
-    <View style={styles.legendRow}>
-      <View style={[styles.legendBar, { backgroundColor: color }]} />
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            color: colors.foreground,
-            fontFamily: "Inter_700Bold",
-            fontSize: 13,
-          }}
-        >
-          {title}
-        </Text>
-        <Text
-          style={{
-            color: colors.mutedForeground,
-            fontFamily: "Inter_400Regular",
-            fontSize: 12,
-            marginTop: 1,
-          }}
-        >
-          {text}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingHorizontal: 16,
-    gap: 12,
+  heroBg: {
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 30,
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
   },
-  kicker: {
-    fontSize: 11,
-    letterSpacing: 1.5,
-    fontFamily: "Inter_700Bold",
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: "Inter_700Bold",
-    marginTop: 2,
-  },
-  subtitle: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    marginTop: 4,
-    lineHeight: 19,
-  },
-  crisisToggle: {
+  brandRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    justifyContent: "space-between",
+  },
+  brandLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  logoDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandName: {
+    color: "#fff",
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+    letterSpacing: 0.3,
+  },
+  communePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 5,
     borderRadius: 999,
-    borderWidth: 1,
+    backgroundColor: "rgba(255,255,255,0.18)",
+  },
+  communeText: {
+    color: "#fff",
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+  },
+  greeting: {
+    color: "#fff",
+    fontFamily: "Inter_700Bold",
+    fontSize: 28,
+    marginTop: 18,
+  },
+  greetingSub: {
+    color: "rgba(255,255,255,0.85)",
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    marginTop: 4,
+  },
+  crisisBanner: {
+    marginHorizontal: 16,
+    marginTop: -16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  crisisIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  crisisTitle: {
+    color: "#fff",
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
+  },
+  crisisText: {
+    color: "rgba(255,255,255,0.92)",
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 16,
   },
   statsRow: {
     flexDirection: "row",
@@ -454,7 +463,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 18,
   },
-  statBox: {
+  statCard: {
     flex: 1,
     borderRadius: 14,
     borderWidth: 1,
@@ -477,102 +486,104 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 2,
   },
-  filtersWrap: {
-    marginTop: 18,
-  },
-  filtersContent: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  filterChip: {
+  bigCta: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  mapWrap: {
-    paddingHorizontal: 16,
-    marginTop: 16,
-  },
-  selectedCard: {
+    gap: 14,
     marginHorizontal: 16,
-    marginTop: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 14,
-    gap: 12,
+    marginTop: 18,
+    padding: 16,
+    borderRadius: 18,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
-  selectedTop: {
-    flexDirection: "row",
+  bigCtaIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#fff",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "center",
   },
-  selectedIcon: {
-    width: 38,
-    height: 38,
+  bigCtaTitle: {
+    color: "#fff",
+    fontFamily: "Inter_700Bold",
+    fontSize: 17,
+  },
+  bigCtaSub: {
+    color: "rgba(255,255,255,0.92)",
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    marginTop: 2,
+  },
+  quickRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 16,
+    marginTop: 14,
+  },
+  quickAction: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "flex-start",
+  },
+  quickIcon: {
+    width: 34,
+    height: 34,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
-  selectedTitle: {
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    marginTop: 26,
+    marginBottom: 12,
+  },
+  sectionTitle: {
     fontFamily: "Inter_700Bold",
-    fontSize: 15,
+    fontSize: 18,
   },
-  selectedDesc: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
-    lineHeight: 19,
-  },
-  selectedRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  detailBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  hintCard: {
-    marginHorizontal: 16,
-    marginTop: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-  },
-  legendCard: {
-    marginHorizontal: 16,
-    marginTop: 18,
-    padding: 16,
-    backgroundColor: "transparent",
-  },
-  legendTitle: {
-    fontFamily: "Inter_700Bold",
-    fontSize: 16,
-  },
-  legendRows: {
-    marginTop: 14,
+  list: {
+    paddingHorizontal: 16,
     gap: 12,
   },
-  legendRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
+  emptyState: {
+    padding: 22,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
   },
-  legendBar: {
-    width: 4,
-    height: 36,
-    borderRadius: 2,
-    marginTop: 2,
+  emptyIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  trustCard: {
+    marginHorizontal: 16,
+    marginTop: 22,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  trustRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  trustIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
