@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "SentinelleCI",
+    "slug": "sentinelle-ci",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "sentinelle-ci",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1E3A5F"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "SentinelleCI utilise la caméra pour photographier les problèmes que vous signalez.",
+        "NSPhotoLibraryUsageDescription": "SentinelleCI accède à vos photos pour joindre une preuve à votre signalement.",
+        "NSLocationWhenInUseUsageDescription": "SentinelleCI utilise votre position pour situer précisément vos signalements."
+      }
+    },
+    "android": {
+      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "SentinelleCI accède à vos photos pour joindre une preuve à votre signalement.",
+          "cameraPermission": "SentinelleCI utilise la caméra pour photographier les problèmes que vous signalez."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "SentinelleCI utilise votre position pour situer précisément vos signalements."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
