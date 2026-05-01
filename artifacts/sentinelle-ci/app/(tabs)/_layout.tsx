@@ -68,6 +68,7 @@ function ClassicTabLayout() {
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  const tabIconSize = isWeb ? 18 : 22;
 
   return (
     <Tabs
@@ -77,7 +78,7 @@ function ClassicTabLayout() {
         headerShown: false,
         tabBarLabelStyle: {
           fontFamily: "Inter_600SemiBold",
-          fontSize: 11,
+          fontSize: isWeb ? 10 : 11,
         },
         tabBarStyle: {
           position: "absolute",
@@ -85,7 +86,9 @@ function ClassicTabLayout() {
           borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,
-          ...(isWeb ? { height: 84, paddingBottom: 16 } : { height: 84 }),
+          ...(isWeb
+            ? { height: 60, paddingBottom: 8, paddingTop: 4, maxWidth: 600, alignSelf: "center", width: "100%", marginHorizontal: "auto" }
+            : { height: 84 }),
         },
         tabBarBackground: () =>
           isIOS ? (
@@ -109,7 +112,7 @@ function ClassicTabLayout() {
         options={{
           title: "Accueil",
           tabBarIcon: ({ color }) => (
-            <Feather name="home" size={22} color={color} />
+            <Feather name="home" size={tabIconSize} color={color} />
           ),
         }}
       />
@@ -118,7 +121,7 @@ function ClassicTabLayout() {
         options={{
           title: "Carte",
           tabBarIcon: ({ color }) => (
-            <Feather name="map" size={22} color={color} />
+            <Feather name="map" size={tabIconSize} color={color} />
           ),
         }}
       />
@@ -138,7 +141,7 @@ function ClassicTabLayout() {
         options={{
           title: "Suivi",
           tabBarIcon: ({ color }) => (
-            <Feather name="inbox" size={22} color={color} />
+            <Feather name="inbox" size={tabIconSize} color={color} />
           ),
         }}
       />
@@ -147,7 +150,7 @@ function ClassicTabLayout() {
         options={{
           title: "Profil",
           tabBarIcon: ({ color }) => (
-            <Feather name="user" size={22} color={color} />
+            <Feather name="user" size={tabIconSize} color={color} />
           ),
         }}
       />
@@ -169,17 +172,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   centerButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: Platform.OS === "web" ? 48 : 64,
+    height: Platform.OS === "web" ? 48 : 64,
+    borderRadius: Platform.OS === "web" ? 24 : 32,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: -22,
+    marginTop: Platform.OS === "web" ? -10 : -22,
     shadowOpacity: 0.4,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
     elevation: 10,
-    borderWidth: 4,
+    borderWidth: Platform.OS === "web" ? 3 : 4,
     borderColor: "#fff",
   },
 });

@@ -206,7 +206,7 @@ export default function SignalerScreen() {
         );
       }
     } catch {
-      // ignore
+      // ignoré
     }
   }
 
@@ -253,7 +253,7 @@ export default function SignalerScreen() {
       <KeyboardAwareScrollView
         bottomOffset={100}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: 140 }}
+        contentContainerStyle={{ paddingBottom: 140, maxWidth: 600, alignSelf: "center", width: "100%" }}
       >
         <View style={styles.intro}>
           <View style={styles.introTopRow}>

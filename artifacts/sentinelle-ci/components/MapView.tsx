@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import {
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -35,7 +36,8 @@ export function StylizedMap({
   const colors = useColors();
   const router = useRouter();
   const { width: winWidth } = useWindowDimensions();
-  const width = winWidth - 32;
+  const width = Math.min(winWidth - 32, 568);
+  const mapHeight = Platform.OS === "web" ? 280 : height;
 
   const pins = useMemo(() => {
     return reports.map((r) => {
@@ -49,17 +51,17 @@ export function StylizedMap({
       return {
         report: r,
         x: Math.max(20, Math.min(width - 40, xRatio * width)),
-        y: Math.max(28, Math.min(height - 40, yRatio * height)),
+        y: Math.max(28, Math.min(mapHeight - 40, yRatio * mapHeight)),
       };
     });
-  }, [reports, width, height]);
+  }, [reports, width, mapHeight]);
 
   return (
     <View
       style={[
         styles.container,
         {
-          height,
+          height: mapHeight,
           width,
           backgroundColor: colors.primary,
           borderRadius: colors.radius,
@@ -80,7 +82,7 @@ export function StylizedMap({
           key={`h${i}`}
           style={[
             styles.gridLine,
-            { top: ((i + 1) * height) / 9, width: "100%", height: 1 },
+            { top: ((i + 1) * mapHeight) / 9, width: "100%", height: 1 },
           ]}
         />
       ))}
@@ -99,7 +101,7 @@ export function StylizedMap({
         style={[
           styles.road,
           {
-            top: height * 0.42,
+            top: mapHeight * 0.42,
             transform: [{ rotate: "-8deg" }],
             width: width * 1.3,
             left: -width * 0.15,
@@ -110,7 +112,7 @@ export function StylizedMap({
         style={[
           styles.road,
           {
-            top: height * 0.62,
+            top: mapHeight * 0.62,
             transform: [{ rotate: "5deg" }],
             width: width * 1.3,
             left: -width * 0.15,
@@ -122,8 +124,8 @@ export function StylizedMap({
           styles.roadVertical,
           {
             left: width * 0.45,
-            height: height * 1.2,
-            top: -height * 0.1,
+            height: mapHeight * 1.2,
+            top: -mapHeight * 0.1,
           },
         ]}
       />
@@ -136,7 +138,7 @@ export function StylizedMap({
             bottom: -20,
             right: -30,
             width: width * 0.5,
-            height: height * 0.4,
+            height: mapHeight * 0.4,
             borderRadius: 200,
           },
         ]}
@@ -192,12 +194,6 @@ export function StylizedMap({
             style={[styles.legendDot, { backgroundColor: PRIORITY_META.P2.bg }]}
           />
           <Text style={styles.legendText}>P2 Rapide</Text>
-        </View>
-        <View style={styles.legendRow}>
-          <View
-            style={[styles.legendDot, { backgroundColor: PRIORITY_META.P3.bg }]}
-          />
-          <Text style={styles.legendText}>P3 Programmé</Text>
         </View>
       </View>
 

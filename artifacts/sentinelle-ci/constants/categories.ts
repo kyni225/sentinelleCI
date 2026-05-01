@@ -8,7 +8,14 @@ export type CategoryId =
   | "ecoles"
   | "dechets"
   | "sante"
-  | "securite";
+  | "securite"
+  | "transport"
+  | "logement"
+  | "pollution"
+  | "inondation"
+  | "nuisances"
+  | "voirie"
+  | "autre";
 
 export type Severity = "faible" | "moyen" | "critique";
 export type Priority = "P1" | "P2" | "P3";
@@ -27,6 +34,13 @@ export const CATEGORIES: {
   { id: "dechets", label: "Déchets", icon: "trash-2", hue: "#16A34A" },
   { id: "sante", label: "Santé", icon: "heart", hue: "#DC2626" },
   { id: "securite", label: "Sécurité", icon: "shield", hue: "#475569" },
+  { id: "transport", label: "Transport", icon: "truck", hue: "#0891B2" },
+  { id: "logement", label: "Logement", icon: "home", hue: "#A855F7" },
+  { id: "pollution", label: "Pollution", icon: "cloud", hue: "#6B7280" },
+  { id: "inondation", label: "Inondation", icon: "umbrella", hue: "#2563EB" },
+  { id: "nuisances", label: "Nuisances", icon: "volume-2", hue: "#EA580C" },
+  { id: "voirie", label: "Voirie", icon: "flag", hue: "#CA8A04" },
+  { id: "autre", label: "Autre", icon: "help-circle", hue: "#9333EA" },
 ];
 
 export const CATEGORY_MAP: Record<CategoryId, (typeof CATEGORIES)[number]> =

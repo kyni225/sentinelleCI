@@ -62,7 +62,7 @@ export default function QuartierScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40, maxWidth: 600, alignSelf: "center", width: "100%" }}
       >
         <LinearGradient
           colors={[colors.primary, "#2A4A75"]}

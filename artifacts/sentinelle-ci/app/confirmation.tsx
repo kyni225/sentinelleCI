@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -30,6 +31,15 @@ export default function ConfirmationScreen() {
   const report = params.id ? getReport(params.id) : undefined;
   const [progress, setProgress] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Réessayer de trouver le signalement si pas encore synchronisé
+  useEffect(() => {
+    if (params.id && !report && retryCount < 10) {
+      const t = setTimeout(() => setRetryCount((c) => c + 1), 500);
+      return () => clearTimeout(t);
+    }
+  }, [params.id, report, retryCount]);
 
   useEffect(() => {
     const t1 = setTimeout(() => setProgress(0.55), 600);
@@ -44,21 +54,23 @@ export default function ConfirmationScreen() {
 
   if (!report) {
     return (
-      <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <View style={[styles.root, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text
           style={{
-            color: colors.foreground,
-            fontFamily: "Inter_600SemiBold",
-            margin: 24,
+            color: colors.mutedForeground,
+            fontFamily: "Inter_500Medium",
+            marginTop: 16,
+            fontSize: 14,
           }}
         >
-          Signalement introuvable.
+          {retryCount >= 10 ? "Signalement introuvable." : "Synchronisation en cours..."}
         </Text>
       </View>
     );
   }
 
-  const cat = CATEGORY_MAP[report.category];
+  const cat = CATEGORY_MAP[report.category] ?? { id: "autre", label: report.category || "Autre", icon: "help-circle" as const, hue: "#9333EA" };
   const prio = PRIORITY_META[report.ai.priority];
 
   return (
@@ -67,6 +79,9 @@ export default function ConfirmationScreen() {
         contentContainerStyle={{
           paddingTop: insets.top + 16,
           paddingBottom: insets.bottom + 120,
+          maxWidth: 600,
+          alignSelf: "center",
+          width: "100%",
         }}
       >
         <View style={styles.successHeader}>
@@ -141,6 +156,7 @@ export default function ConfirmationScreen() {
               </Text>
             </View>
 
+            {report.ai.priority !== "P3" ? (
             <View style={styles.aiPriorityRow}>
               <View style={[styles.aiPrioCircle, { backgroundColor: prio.bg }]}>
                 <Feather name="zap" size={20} color="#fff" />
@@ -152,6 +168,7 @@ export default function ConfirmationScreen() {
                 </Text>
               </View>
             </View>
+            ) : null}
 
             <View style={styles.aiMeta}>
               <View style={styles.aiMetaItem}>

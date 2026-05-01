@@ -57,7 +57,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
             JSON.stringify(DEFAULT_PROFILE),
           );
       } catch {
-        // ignore
+        // ignoré
       }
     })();
   }, []);
@@ -67,7 +67,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
-      // ignore
+      // ignoré
     }
   }, []);
 
@@ -116,6 +116,6 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
 export function useProfile() {
   const ctx = useContext(ProfileContext);
-  if (!ctx) throw new Error("useProfile must be used within ProfileProvider");
+  if (!ctx) throw new Error("useProfile doit être utilisé dans ProfileProvider");
   return ctx;
 }

@@ -65,6 +65,9 @@ export default function HomeScreen() {
         contentContainerStyle={{
           paddingTop: topPad,
           paddingBottom: bottomPad,
+          maxWidth: 600,
+          alignSelf: "center",
+          width: "100%",
         }}
       >
         <View style={styles.heroBg}>
@@ -438,7 +441,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontFamily: "Inter_700Bold",
-    fontSize: 28,
+    fontSize: 22,
     marginTop: 18,
   },
   greetingSub: {
@@ -520,10 +523,11 @@ const styles = StyleSheet.create({
   bigCta: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 14,
     marginHorizontal: 16,
     marginTop: 18,
-    padding: 16,
+    padding: 18,
     borderRadius: 18,
     shadowOpacity: 0.25,
     shadowRadius: 8,

@@ -72,6 +72,9 @@ export default function ProfileScreen() {
         contentContainerStyle={{
           paddingTop: topPad + 16,
           paddingBottom: bottomPad,
+          maxWidth: 600,
+          alignSelf: "center",
+          width: "100%",
         }}
       >
         <View style={styles.heroWrap}>
@@ -251,6 +254,43 @@ export default function ProfileScreen() {
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
+          <Pressable
+            onPress={() => router.push("/connexion")}
+            style={styles.settingRow}
+          >
+            <View
+              style={[styles.settingIcon, { backgroundColor: colors.surfaceAlt }]}
+            >
+              <Feather name="log-in" size={16} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: colors.foreground,
+                  fontFamily: "Inter_600SemiBold",
+                  fontSize: 14,
+                }}
+              >
+                Se connecter
+              </Text>
+              <Text
+                style={{
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_400Regular",
+                  fontSize: 12,
+                  marginTop: 1,
+                }}
+              >
+                Accédez à votre compte SentinelleCI
+              </Text>
+            </View>
+            <Feather
+              name="chevron-right"
+              size={18}
+              color={colors.mutedForeground}
+            />
+          </Pressable>
+          <Divider />
           <SettingRow
             icon="bell"
             label="Notifications push"

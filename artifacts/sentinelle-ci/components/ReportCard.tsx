@@ -38,7 +38,7 @@ export function ReportCard({
 }) {
   const colors = useColors();
   const router = useRouter();
-  const cat = CATEGORY_MAP[report.category];
+  const cat = CATEGORY_MAP[report.category] ?? { id: "autre", label: report.category || "Autre", icon: "help-circle" as const, hue: "#9333EA" };
   const photo = report.photoUris[0];
 
   return (
@@ -79,7 +79,7 @@ export function ReportCard({
             {timeAgo(report.createdAt)} · {report.authorPseudo}
           </Text>
         </View>
-        <PriorityBadge priority={report.ai.priority} />
+        {report.ai.priority !== "P3" ? <PriorityBadge priority={report.ai.priority} /> : null}
       </View>
 
       {!compact ? (

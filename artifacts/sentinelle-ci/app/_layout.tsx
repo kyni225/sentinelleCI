@@ -57,6 +57,20 @@ function RootLayoutNav() {
           title: "Quartier",
         }}
       />
+      <Stack.Screen
+        name="inscription"
+        options={{
+          presentation: "modal",
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="connexion"
+        options={{
+          presentation: "modal",
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

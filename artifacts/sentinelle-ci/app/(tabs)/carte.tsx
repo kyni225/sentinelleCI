@@ -75,6 +75,9 @@ export default function MapScreen() {
         contentContainerStyle={{
           paddingTop: topPad + 16,
           paddingBottom: bottomPad,
+          maxWidth: 600,
+          alignSelf: "center",
+          width: "100%",
         }}
       >
         <View style={styles.header}>
@@ -230,14 +233,14 @@ export default function MapScreen() {
                   styles.selectedIcon,
                   {
                     backgroundColor:
-                      CATEGORY_MAP[selected.category].hue + "15",
+                      (CATEGORY_MAP[selected.category] ?? { hue: "#9333EA" }).hue + "15",
                   },
                 ]}
               >
                 <Feather
-                  name={CATEGORY_MAP[selected.category].icon}
+                  name={(CATEGORY_MAP[selected.category] ?? { icon: "help-circle" as const }).icon}
                   size={18}
-                  color={CATEGORY_MAP[selected.category].hue}
+                  color={(CATEGORY_MAP[selected.category] ?? { hue: "#9333EA" }).hue}
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -256,7 +259,7 @@ export default function MapScreen() {
                     { color: colors.foreground },
                   ]}
                 >
-                  {CATEGORY_MAP[selected.category].label} · {selected.quartier}
+                  {(CATEGORY_MAP[selected.category] ?? { label: selected.category || "Autre" }).label} · {selected.quartier}
                 </Text>
                 <Text
                   style={{
@@ -270,7 +273,7 @@ export default function MapScreen() {
                   {selected.address}
                 </Text>
               </View>
-              <PriorityBadge priority={selected.ai.priority} />
+              {selected.ai.priority !== "P3" ? <PriorityBadge priority={selected.ai.priority} /> : null}
             </View>
             <Text
               style={[
@@ -354,11 +357,6 @@ export default function MapScreen() {
               color="#F59E0B"
               title="P2 — Intervention rapide"
               text="Doit être traité dans les 48 h pour éviter une dégradation."
-            />
-            <LegendRow
-              color="#475569"
-              title="P3 — Programmé"
-              text="Maintenance courante, sans danger immédiat."
             />
           </View>
         </View>
@@ -586,6 +584,7 @@ const styles = StyleSheet.create({
   mapWrap: {
     paddingHorizontal: 16,
     marginTop: 14,
+    alignItems: "center",
   },
   selectedCard: {
     marginHorizontal: 16,

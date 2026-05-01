@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
   useCallback,
@@ -7,13 +6,22 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  doc,
+  query,
+  orderBy,
+  increment,
+  getDocs,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 import type { CategoryId, Status } from "@/constants/categories";
 import { analyzeReport, generateBlockchainTx } from "@/lib/ai";
-import { SEED_REPORTS } from "@/lib/seed";
 import type { Report } from "@/types/report";
-
-const STORAGE_KEY = "sentinelle.reports.v2";
 
 type NewReportInput = {
   category: CategoryId;
@@ -48,37 +56,46 @@ type ReportsContextValue = {
 const ReportsContext = createContext<ReportsContextValue | null>(null);
 
 const HOUR = 60 * 60 * 1000;
+const COL = "signalements";
 
 export function ReportsProvider({ children }: { children: React.ReactNode }) {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Écoute temps réel Firestore
   useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed: Report[] = JSON.parse(raw);
-          setReports(parsed);
-        } else {
-          setReports(SEED_REPORTS);
-          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_REPORTS));
-        }
-      } catch {
-        setReports(SEED_REPORTS);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  const persist = useCallback(async (next: Report[]) => {
-    setReports(next);
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // ignore
-    }
+    const q = query(collection(db, COL), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      const list: Report[] = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          number: data.number ?? "S???",
+          category: data.category,
+          description: data.description ?? "",
+          photoUris: data.photoUris ?? [],
+          quartier: data.quartier ?? "",
+          address: data.address ?? "",
+          latitude: data.latitude ?? 0,
+          longitude: data.longitude ?? 0,
+          createdAt: data.createdAt ?? 0,
+          authorPseudo: data.authorPseudo ?? "Citoyen",
+          isAnonymous: data.isAnonymous ?? false,
+          status: data.status ?? "soumis",
+          history: data.history ?? [],
+          ai: data.ai ?? { severity: "faible", priority: "P3", duplicates: 0, confidence: 50, summary: "" },
+          blockchain: data.blockchain ?? generateBlockchainTx(),
+          upvotes: data.upvotes ?? 0,
+          isMine: data.isMine ?? false,
+        };
+      });
+      setReports(list);
+      setLoading(false);
+    }, (err) => {
+      console.error("Firestore erreur:", err);
+      setLoading(false);
+    });
+    return unsub;
   }, []);
 
   const countSimilar = useCallback(
@@ -125,7 +142,7 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
       });
       const now = Date.now();
       const newReport: Report = {
-        id: `${now}_${Math.random().toString(36).slice(2, 8)}`,
+        id: `temp_${now}`,
         number: nextNumber(),
         category: input.category,
         description: input.description,
@@ -144,15 +161,25 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
         upvotes: 1,
         isMine: true,
       };
-      const next = [newReport, ...reports];
-      await persist(next);
+
+      // Envoyer vers Firebase et récupérer le vrai ID
+      const { id: _id, ...data } = newReport;
+      const docRef = await addDoc(collection(db, COL), data);
+      newReport.id = docRef.id;
       return newReport;
     },
-    [countSimilar, nextNumber, persist, reports],
+    [countSimilar, nextNumber, reports],
   );
 
   const getReport = useCallback(
-    (id: string) => reports.find((r) => r.id === id),
+    (id: string) => {
+      const found = reports.find((r) => r.id === id);
+      if (found) return found;
+      // Fallback : chercher par number si l'ID Firebase n'est pas encore synchronisé
+      const match = id.match(/^S\d+$/);
+      if (match) return reports.find((r) => r.number === id);
+      return undefined;
+    },
     [reports],
   );
 
@@ -163,32 +190,31 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
 
   const upvote = useCallback(
     async (id: string) => {
-      const next = reports.map((r) =>
-        r.id === id ? { ...r, upvotes: r.upvotes + 1 } : r,
-      );
-      await persist(next);
+      const ref = doc(db, COL, id);
+      await updateDoc(ref, { upvotes: increment(1) });
     },
-    [persist, reports],
+    [],
   );
 
   const advanceStatus = useCallback(
     async (id: string, status: Status, note?: string) => {
-      const next = reports.map((r) => {
-        if (r.id !== id) return r;
-        return {
-          ...r,
-          status,
-          history: [...r.history, { status, at: Date.now(), note }],
-        };
+      const r = reports.find((x) => x.id === id);
+      if (!r) return;
+      const ref = doc(db, COL, id);
+      await updateDoc(ref, {
+        status,
+        history: [...r.history, { status, at: Date.now(), note }],
       });
-      await persist(next);
     },
-    [persist, reports],
+    [reports],
   );
 
   const resetSeed = useCallback(async () => {
-    await persist(SEED_REPORTS);
-  }, [persist]);
+    const snap = await getDocs(collection(db, COL));
+    for (const d of snap.docs) {
+      await updateDoc(doc(db, COL, d.id), { _deleted: true });
+    }
+  }, []);
 
   const { crisisMode, crisisQuartiers } = useMemo(() => {
     const since = Date.now() - 24 * HOUR;
@@ -244,6 +270,6 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
 
 export function useReports() {
   const ctx = useContext(ReportsContext);
-  if (!ctx) throw new Error("useReports must be used within ReportsProvider");
+  if (!ctx) throw new Error("useReports doit être utilisé dans ReportsProvider");
   return ctx;
 }

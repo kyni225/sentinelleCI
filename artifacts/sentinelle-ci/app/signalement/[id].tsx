@@ -70,14 +70,14 @@ export default function ReportDetail() {
     );
   }
 
-  const cat = CATEGORY_MAP[report.category];
+  const cat = CATEGORY_MAP[report.category] ?? { id: "autre", label: report.category || "Autre", icon: "help-circle" as const, hue: "#9333EA" };
   const currentStepIdx = STATUS_ORDER.indexOf(report.status);
   const photoWidth = Math.min(width, 600);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100, maxWidth: 600, alignSelf: "center", width: "100%" }}
       >
         <LinearGradient
           colors={[cat.hue, cat.hue + "BB"]}
@@ -95,7 +95,7 @@ export default function ReportDetail() {
             </View>
             <Text style={styles.heroQuartier}>{report.quartier}</Text>
           </View>
-          <PriorityBadge priority={report.ai.priority} />
+          {report.ai.priority !== "P3" ? <PriorityBadge priority={report.ai.priority} /> : null}
         </LinearGradient>
 
         {report.photoUris.length > 0 ? (

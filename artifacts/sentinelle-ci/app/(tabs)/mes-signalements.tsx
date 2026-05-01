@@ -77,6 +77,9 @@ export default function MyReportsScreen() {
         contentContainerStyle={{
           paddingTop: topPad + 16,
           paddingBottom: bottomPad,
+          maxWidth: 600,
+          alignSelf: "center",
+          width: "100%",
         }}
       >
         <View style={styles.header}>
