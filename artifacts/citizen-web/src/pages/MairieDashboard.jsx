@@ -122,7 +122,7 @@ export default function MairieDashboard() {
             <p style={styles.cardDesc}>{s.description}</p>
             <div style={styles.cardMeta}>
               <span>📍 {s.quartier}{s.address ? ` — ${s.address}` : ''}</span>
-              <span>🕐 {timeAgo(s.createdAt)} · {s.authorPseudo || 'Anonyme'}</span>
+              <span>🕐 {timeAgo(s.createdAt)} · {s.isAnonymous ? 'Citoyen anonyme' : (s.authorPseudo || 'Anonyme')}</span>
               <span>👍 {s.upvotes || 0}</span>
               {s.ai?.severity && <span>🤖 IA : {s.ai.severity}</span>}
             </div>

@@ -178,7 +178,7 @@ export default function ReportDetail() {
                 fontSize: 13,
               }}
             >
-              Signalé par {report.authorPseudo} · {formatDate(report.createdAt)}
+              Signalé par {report.isAnonymous ? "Citoyen anonyme" : report.authorPseudo} · {formatDate(report.createdAt)}
             </Text>
           </View>
 

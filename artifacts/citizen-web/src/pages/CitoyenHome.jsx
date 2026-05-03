@@ -158,7 +158,7 @@ export default function CitoyenHome() {
                     <span style={styles.cardNumber}>#{r.number || r.id.slice(0, 6)}</span>
                     <span style={styles.cardCategory}>{cat.label} · {r.quartier}</span>
                   </div>
-                  <span style={styles.cardTime}>{timeAgo(r.createdAt)} · {r.authorPseudo || 'Anonyme'}</span>
+                  <span style={styles.cardTime}>{timeAgo(r.createdAt)} · {r.isAnonymous ? 'Citoyen anonyme' : (r.authorPseudo || 'Anonyme')}</span>
                 </div>
               </div>
               <p style={styles.cardDesc}>{r.description}</p>

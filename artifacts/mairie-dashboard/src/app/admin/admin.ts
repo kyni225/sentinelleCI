@@ -126,8 +126,8 @@ import { FirebaseService, Signalement } from '../firebase.service';
         <div *ngFor="let s of filtered" class="card" [ngClass]="s.status">
           <div class="card-top">
             <div class="card-top-left">
-              <img *ngIf="s.photoUris?.length > 0" [src]="s.photoUris[0]" class="card-thumb" />
-              <div *ngIf="!s.photoUris?.length" class="card-icon-wrap" [style.backgroundColor]="categoryHue(s.category) + '22'">
+              <img *ngIf="s.photoUris.length > 0" [src]="s.photoUris[0]" class="card-thumb" />
+              <div *ngIf="!s.photoUris.length" class="card-icon-wrap" [style.backgroundColor]="categoryHue(s.category) + '22'">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" [attr.stroke]="categoryHue(s.category)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               </div>
               <div class="card-title-area">
@@ -137,7 +137,7 @@ import { FirebaseService, Signalement } from '../firebase.service';
                   <span class="priority" *ngIf="s.ai.priority !== 'P3'" [ngClass]="'prio-' + s.ai.priority">{{ s.ai.priority }}</span>
                   <span class="status-badge" [ngClass]="'status-' + s.status">{{ statusLabel(s.status) }}</span>
                 </div>
-                <span class="time">{{ timeAgo(s.createdAt) }} · {{ s.authorPseudo }}</span>
+                <span class="time">{{ timeAgo(s.createdAt) }} · {{ s.isAnonymous ? 'Citoyen anonyme' : s.authorPseudo }}</span>
               </div>
             </div>
           </div>
@@ -153,7 +153,7 @@ import { FirebaseService, Signalement } from '../firebase.service';
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
               <span>{{ s.upvotes }} soutien{{ s.upvotes > 1 ? 's' : '' }}</span>
             </div>
-            <div class="detail" *ngIf="s.ai?.severity">
+            <div class="detail" *ngIf="s.ai.severity">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
               <span>IA : {{ s.ai.severity }}</span>
             </div>

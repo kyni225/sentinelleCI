@@ -85,7 +85,8 @@ export default function Signaler() {
         status: 'soumis',
         upvotes: 0,
         authorId: user.uid,
-        authorPseudo: user.displayName || 'Citoyen',
+        authorPseudo: 'Citoyen anonyme',
+        isAnonymous: true,
         createdAt: Date.now(),
         ai: {
           priority: 'P3',

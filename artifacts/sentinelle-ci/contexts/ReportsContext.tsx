@@ -17,7 +17,8 @@ import {
   increment,
   getDocs,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 
 import type { CategoryId, Status } from "@/constants/categories";
 import { analyzeReport, generateBlockchainTx } from "@/lib/ai";
@@ -126,6 +127,18 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
     return `S${String(max + 1).padStart(3, "0")}`;
   }, [reports]);
 
+  const uploadPhoto = useCallback(
+    async (uri: string, reportId: string, index: number): Promise<string> => {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const path = `signalements/${reportId}/photo_${index}_${Date.now()}`;
+      const storageRef = ref(storage, path);
+      await uploadBytes(storageRef, blob);
+      return getDownloadURL(storageRef);
+    },
+    [],
+  );
+
   const createReport = useCallback(
     async (input: NewReportInput) => {
       const similar = countSimilar(
@@ -141,12 +154,27 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
         similarCount: similar,
       });
       const now = Date.now();
+      const tempId = `temp_${now}`;
+
+      // Upload photos to Firebase Storage (not base64 in Firestore)
+      let uploadedUris: string[] = [];
+      if (input.photoUris.length > 0) {
+        try {
+          uploadedUris = await Promise.all(
+            input.photoUris.map((uri, i) => uploadPhoto(uri, tempId, i)),
+          );
+        } catch (err) {
+          console.error("[createReport] Photo upload failed, continuing without photos:", err);
+          uploadedUris = [];
+        }
+      }
+
       const newReport: Report = {
-        id: `temp_${now}`,
+        id: tempId,
         number: nextNumber(),
         category: input.category,
         description: input.description,
-        photoUris: input.photoUris,
+        photoUris: uploadedUris,
         quartier: input.quartier,
         address: input.address,
         latitude: input.latitude,

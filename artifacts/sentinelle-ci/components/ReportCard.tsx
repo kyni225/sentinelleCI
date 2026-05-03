@@ -76,7 +76,7 @@ export function ReportCard({
             </Text>
           </View>
           <Text style={[styles.time, { color: colors.mutedForeground }]}>
-            {timeAgo(report.createdAt)} · {report.authorPseudo}
+            {timeAgo(report.createdAt)} · {report.isAnonymous ? "Citoyen anonyme" : report.authorPseudo}
           </Text>
         </View>
         {report.ai.priority !== "P3" ? <PriorityBadge priority={report.ai.priority} /> : null}

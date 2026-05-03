@@ -158,7 +158,7 @@ export default function MesSignalements() {
                     <span style={s.cardNumber}>#{r.number || r.id.slice(0, 6)}</span>
                     <span style={s.cardCategory}>{cat.label} · {r.quartier}</span>
                   </div>
-                  <span style={s.cardTime}>{timeAgo(r.createdAt)} · {r.authorPseudo || 'Anonyme'}</span>
+                  <span style={s.cardTime}>{timeAgo(r.createdAt)} · {r.isAnonymous ? 'Citoyen anonyme' : (r.authorPseudo || 'Anonyme')}</span>
                 </div>
               </div>
               <p style={s.cardDesc}>{r.description}</p>

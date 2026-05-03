@@ -130,7 +130,7 @@ export default function SignalementDetail() {
         </div>
         <div style={s.locRow}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7785" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span style={s.locText}>Signalé par {report.authorPseudo || 'Citoyen'} · {formatDate(report.createdAt)}</span>
+          <span style={s.locText}>Signalé par {report.isAnonymous ? 'Citoyen anonyme' : (report.authorPseudo || 'Citoyen')} · {formatDate(report.createdAt)}</span>
         </div>
 
         {/* Upvote */}
