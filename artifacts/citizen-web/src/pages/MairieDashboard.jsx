@@ -212,7 +212,7 @@ export default function MairieDashboard() {
                   </select>
                 </div>
                 <button style={s.btnUpvote} onClick={() => upvoteReport(sig.id)}>👍 Soutenir</button>
-                <button style={s.btnMap} onClick={() => { openDetail(sig); setTab('map') }}>📍 Voir sur carte</button>
+                <button style={s.btnMap} onClick={() => { closeDetail(); setTab('map') }}>📍 Carte</button>
               </div>
             </div>
           ))}
@@ -277,12 +277,13 @@ export default function MairieDashboard() {
       {selected && (
         <div style={s.overlay} onClick={closeDetail}>
           <div style={s.detailPanel} onClick={e => e.stopPropagation()}>
-            <button style={s.detailClose} onClick={closeDetail}>✕</button>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 700, fontSize: 16, color: '#0F1B2D' }}>#{selected.number || selected.id.slice(0, 6)}</span>
-              <span style={{ background: '#F1ECE0', padding: '4px 12px', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#006B3F' }}>{(CATS[selected.category] || CATS.autre).label}</span>
-              <span style={{ ...s.cardStatus, ...(STATUS_META[selected.status] || STATUS_META.soumis) }}>{(STATUS_META[selected.status] || STATUS_META.soumis).label}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 700, fontSize: 16, color: '#0F1B2D' }}>#{selected.number || selected.id.slice(0, 6)}</span>
+                <span style={{ background: '#F1ECE0', padding: '4px 12px', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#006B3F' }}>{(CATS[selected.category] || CATS.autre).label}</span>
+                <span style={{ ...s.cardStatus, ...(STATUS_META[selected.status] || STATUS_META.soumis) }}>{(STATUS_META[selected.status] || STATUS_META.soumis).label}</span>
+              </div>
+              <button style={s.detailClose} onClick={closeDetail}>✕</button>
             </div>
 
             {selected.photoUris && selected.photoUris.length > 0 && (
@@ -334,11 +335,14 @@ export default function MairieDashboard() {
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 12, paddingTop: 16, borderTop: '1px solid #E5DCC9' }}>
-              <select style={{ ...s.actionSelect, fontSize: 15, padding: '10px 16px' }} value={selected.status} onChange={e => { updateStatus(selected.id, e.target.value); setSelected({ ...selected, status: e.target.value }) }}>
-                <option value="soumis">Soumis</option><option value="valide">Validé</option><option value="en_cours">En cours</option><option value="resolu">Résolu</option>
-              </select>
-              <button style={s.btnUpvote} onClick={() => upvoteReport(selected.id)}>👍 Soutenir</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 16, borderTop: '1px solid #E5DCC9' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <select style={{ ...s.actionSelect, fontSize: 15, padding: '10px 16px', flex: 1 }} value={selected.status} onChange={e => { updateStatus(selected.id, e.target.value); setSelected({ ...selected, status: e.target.value }) }}>
+                  <option value="soumis">Soumis</option><option value="valide">Validé</option><option value="en_cours">En cours</option><option value="resolu">Résolu</option>
+                </select>
+                <button style={s.btnUpvote} onClick={() => upvoteReport(selected.id)}>👍 {selected.upvotes || 0}</button>
+              </div>
+              <button style={{ ...s.btnMap, width: '100%', justifyContent: 'center', padding: '12px 16px' }} onClick={() => { closeDetail(); setTab('map') }}>📍 Voir sur la carte</button>
             </div>
           </div>
         </div>
@@ -349,34 +353,34 @@ export default function MairieDashboard() {
 
 const s = {
   page: { minHeight: '100vh', background: '#FAFAF7' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', background: '#FFFFFF', borderBottom: '1px solid #E5DCC9', position: 'sticky', top: 0, zIndex: 50 },
-  headerLeft: { display: 'flex', alignItems: 'center', gap: 12 },
-  headerTitle: { fontSize: 20, fontWeight: 700, color: '#006B3F', margin: 0 },
-  headerSub: { fontSize: 13, color: '#6B7785' },
-  headerRight: { display: 'flex', alignItems: 'center', gap: 14 },
-  live: { background: '#DC262615', color: '#DC2626', padding: '6px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, border: '1px solid #DC262630' },
-  pulseDot: { width: 8, height: 8, borderRadius: '50%', background: '#DC2626', display: 'inline-block', animation: 'pulse 2s infinite' },
-  btnLogout: { background: '#EFE9DD', color: '#006B3F', border: '1px solid #E5DCC9', padding: '9px 16px', borderRadius: 12, fontSize: 14, fontWeight: 600, cursor: 'pointer' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#FFFFFF', borderBottom: '1px solid #E5DCC9', position: 'sticky', top: 0, zIndex: 50 },
+  headerLeft: { display: 'flex', alignItems: 'center', gap: 8 },
+  headerTitle: { fontSize: 17, fontWeight: 700, color: '#006B3F', margin: 0 },
+  headerSub: { fontSize: 11, color: '#6B7785' },
+  headerRight: { display: 'flex', alignItems: 'center', gap: 8 },
+  live: { background: '#DC262615', color: '#DC2626', padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, border: '1px solid #DC262630' },
+  pulseDot: { width: 6, height: 6, borderRadius: '50%', background: '#DC2626', display: 'inline-block', animation: 'pulse 2s infinite' },
+  btnLogout: { background: '#EFE9DD', color: '#006B3F', border: '1px solid #E5DCC9', padding: '7px 12px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' },
 
-  tabs: { display: 'flex', background: '#FFFFFF', borderBottom: '2px solid #E5DCC9', padding: '0 24px' },
-  tabBtn: { display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', background: 'none', border: 'none', borderBottom: '3px solid transparent', color: '#6B7785', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: -2 },
+  tabs: { display: 'flex', background: '#FFFFFF', borderBottom: '2px solid #E5DCC9', padding: '0 12px' },
+  tabBtn: { display: 'flex', alignItems: 'center', gap: 6, padding: '12px 14px', background: 'none', border: 'none', borderBottom: '3px solid transparent', color: '#6B7785', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: -2 },
   tabActive: { color: '#006B3F', borderBottomColor: '#006B3F' },
 
-  content: { maxWidth: 960, margin: '0 auto', padding: '0 24px 24px' },
-  statsRow: { display: 'flex', gap: 14, padding: '24px 0', overflowX: 'auto' },
-  statCard: { background: '#FFFFFF', borderRadius: 16, padding: '18px 20px', minWidth: 140, border: '1px solid #E5DCC9', textAlign: 'center' },
-  statNum: { fontSize: 28, fontWeight: 800, display: 'block' },
-  statLabel: { fontSize: 13, color: '#6B7785', marginTop: 4, display: 'block' },
-  filters: { display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', paddingBottom: 16 },
-  filterGroup: { display: 'flex', flexDirection: 'column', gap: 6 },
-  filterLabel: { fontSize: 12, fontWeight: 600, color: '#6B7785', textTransform: 'uppercase', letterSpacing: 0.5 },
-  select: { background: '#FFFFFF', border: '1px solid #E5DCC9', color: '#0F1B2D', padding: '10px 14px', borderRadius: 12, fontSize: 15, outline: 'none' },
+  content: { maxWidth: 960, margin: '0 auto', padding: '0 16px 16px' },
+  statsRow: { display: 'flex', gap: 8, padding: '16px 0', overflowX: 'auto' },
+  statCard: { background: '#FFFFFF', borderRadius: 14, padding: '14px 12px', minWidth: 100, border: '1px solid #E5DCC9', textAlign: 'center', flex: '1 0 auto' },
+  statNum: { fontSize: 22, fontWeight: 800, display: 'block' },
+  statLabel: { fontSize: 11, color: '#6B7785', marginTop: 2, display: 'block' },
+  filters: { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', paddingBottom: 12 },
+  filterGroup: { display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 120px' },
+  filterLabel: { fontSize: 11, fontWeight: 600, color: '#6B7785', textTransform: 'uppercase', letterSpacing: 0.5 },
+  select: { background: '#FFFFFF', border: '1px solid #E5DCC9', color: '#0F1B2D', padding: '8px 10px', borderRadius: 10, fontSize: 14, outline: 'none', width: '100%' },
   resultCount: { fontSize: 14, color: '#6B7785', marginBottom: 12, fontWeight: 500 },
 
-  card: { background: '#FFFFFF', borderRadius: 16, padding: 18, border: '1px solid #E5DCC9', marginBottom: 12, borderLeft: '4px solid #E5DCC9', transition: 'transform 0.2s' },
-  cardTop: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 },
-  cardThumb: { width: 52, height: 52, borderRadius: 14, objectFit: 'cover', background: '#F1ECE0' },
-  cardIconWrap: { width: 52, height: 52, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  card: { background: '#FFFFFF', borderRadius: 14, padding: 14, border: '1px solid #E5DCC9', marginBottom: 10, borderLeft: '4px solid #E5DCC9', transition: 'transform 0.2s' },
+  cardTop: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 },
+  cardThumb: { width: 44, height: 44, borderRadius: 12, objectFit: 'cover', background: '#F1ECE0' },
+  cardIconWrap: { width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   cardTopRow: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   cardNumber: { fontWeight: 700, fontSize: 16, color: '#0F1B2D' },
   cardCat: { background: '#F1ECE0', padding: '4px 12px', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#006B3F' },
@@ -387,15 +391,15 @@ const s = {
   cardTime: { fontSize: 13, color: '#6B7785', whiteSpace: 'nowrap' },
   cardDesc: { color: '#0F1B2D', fontSize: 15, margin: '0 0 12px', lineHeight: 1.6 },
   cardMeta: { display: 'flex', gap: 16, fontSize: 13, color: '#6B7785', flexWrap: 'wrap' },
-  cardActions: { display: 'flex', gap: 12, marginTop: 16, paddingTop: 16, borderTop: '1px solid #E5DCC9', alignItems: 'center' },
-  actionStatus: { display: 'flex', alignItems: 'center', gap: 10 },
-  actionLabel: { fontSize: 13, color: '#6B7785', fontWeight: 600 },
-  actionSelect: { background: '#FFFFFF', border: '1px solid #E5DCC9', color: '#0F1B2D', padding: '9px 14px', borderRadius: 10, fontSize: 14, outline: 'none' },
-  btnUpvote: { background: '#FF6700', color: '#FFFFFF', border: 'none', padding: '9px 16px', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' },
-  btnMap: { background: '#006B3F', color: '#FFFFFF', border: 'none', padding: '9px 16px', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 },
+  cardActions: { display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid #E5DCC9', alignItems: 'center', flexWrap: 'wrap' },
+  actionStatus: { display: 'flex', alignItems: 'center', gap: 6 },
+  actionLabel: { fontSize: 12, color: '#6B7785', fontWeight: 600 },
+  actionSelect: { background: '#FFFFFF', border: '1px solid #E5DCC9', color: '#0F1B2D', padding: '7px 10px', borderRadius: 10, fontSize: 13, outline: 'none' },
+  btnUpvote: { background: '#FF6700', color: '#FFFFFF', border: 'none', padding: '7px 12px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' },
+  btnMap: { background: '#006B3F', color: '#FFFFFF', border: 'none', padding: '7px 12px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 },
   empty: { textAlign: 'center', padding: 60, background: '#FFFFFF', borderRadius: 16, border: '1px solid #E5DCC9' },
 
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 },
-  detailPanel: { background: '#FFFFFF', borderRadius: 20, padding: 24, maxWidth: 560, width: '100%', maxHeight: '90vh', overflowY: 'auto', position: 'relative' },
-  detailClose: { position: 'absolute', top: 16, right: 16, background: '#F1ECE0', border: 'none', width: 32, height: 32, borderRadius: 16, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '10px', overflowY: 'auto' },
+  detailPanel: { background: '#FFFFFF', borderRadius: 18, padding: 18, maxWidth: 560, width: '100%', maxHeight: '95vh', overflowY: 'auto', position: 'relative', marginTop: 10 },
+  detailClose: { background: '#F1ECE0', border: 'none', width: 30, height: 30, borderRadius: 15, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 }
