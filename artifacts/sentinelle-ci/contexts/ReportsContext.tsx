@@ -18,6 +18,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 
 import type { CategoryId, Status } from "@/constants/categories";
 import { analyzeReport, generateBlockchainTx } from "@/lib/ai";
@@ -129,26 +130,15 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
   const compressPhoto = useCallback(
     async (uri: string): Promise<string> => {
       try {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = reject;
-          img.src = uri;
-        });
-        const MAX = 600;
-        let w = img.width;
-        let h = img.height;
-        if (w > MAX || h > MAX) {
-          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-          else { w = Math.round(w * MAX / h); h = MAX; }
+        const result = await manipulateAsync(
+          uri,
+          [{ resize: { width: 600 } }],
+          { compress: 0.4, format: SaveFormat.JPEG, base64: true },
+        );
+        if (result.base64) {
+          return `data:image/jpeg;base64,${result.base64}`;
         }
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, w, h);
-        return canvas.toDataURL("image/jpeg", 0.4);
+        return result.uri;
       } catch (err) {
         console.error("[compressPhoto]", err);
         return uri;
