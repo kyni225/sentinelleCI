@@ -1,9 +1,50 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { auth, onSignalements } from '../firebase'
 import { CATS, STATUS_META } from '../constants'
 import { timeAgo } from '../utils'
 import BottomNav from '../components/BottomNav'
+
+// Fix Leaflet default marker icon
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+})
+
+function FitBounds({ reports }) {
+  const map = useMap()
+  useEffect(() => {
+    const valid = reports.filter(r => r.latitude && r.longitude)
+    if (valid.length > 0) {
+      const bounds = L.latLngBounds(valid.map(r => [r.latitude, r.longitude]))
+      map.fitBounds(bounds, { padding: [40, 40] })
+    }
+  }, [reports, map])
+  return null
+}
+
+function ReportMarker({ r, onClick }) {
+  const cat = CATS[r.category] || CATS.autre
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="width:28px;height:28px;border-radius:50%;background:${cat.hue};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;">${cat.icon}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  })
+  return (
+    <Marker position={[r.latitude || 5.345, r.longitude || -4.024]} icon={icon} eventHandlers={{ click: () => onClick(r) }}>
+      <Popup>
+        <b>{cat.label} · {r.quartier}</b><br />
+        <small>{timeAgo(r.createdAt)} · {(STATUS_META[r.status] || STATUS_META.soumis).label}</small>
+      </Popup>
+    </Marker>
+  )
+}
 
 const FILTERS = [
   { id: 'all', label: 'Tous' },
@@ -96,32 +137,15 @@ export default function Carte() {
           })}
         </div>
 
-        {/* Map placeholder */}
+        {/* Map */}
         <div style={s.mapContainer}>
-          <div style={s.mapPlaceholder}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#006B3F" strokeWidth="1.5"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-            <span style={{ fontWeight: 700, fontSize: 16, color: '#0F1B2D', marginTop: 8, display: 'block' }}>Carte des signalements</span>
-            <span style={{ fontSize: 13, color: '#6B7785', marginTop: 4, display: 'block' }}>{filtered.length} signalement{filtered.length > 1 ? 's' : ''} affiché{filtered.length > 1 ? 's' : ''}</span>
-            <span style={{ fontSize: 12, color: '#006B3F', marginTop: 8, display: 'block', fontWeight: 600 }}>👆 Touchez un point sur la carte pour voir le signalement</span>
-          </div>
-          {/* Map pins overlay */}
-          <div style={s.mapPins}>
-            {filtered.slice(0, 20).map(r => {
-              const cat = CATS[r.category] || { hue: '#9333EA', icon: '📌' }
-              const left = ((r.longitude || -4.0) + 5) / 2 * 80 + 10
-              const top = ((r.latitude || 5.3) - 4.5) / 2 * 80 + 10
-              return (
-                <div key={r.id} style={{
-                  ...s.mapPin,
-                  background: cat.hue,
-                  left: `${Math.min(Math.max(left, 5), 90)}%`,
-                  top: `${Math.min(Math.max(top, 5), 85)}%`,
-                }} onClick={() => setSelected(r)} title={r.quartier}>
-                  <span style={{ fontSize: 10 }}>{cat.icon}</span>
-                </div>
-              )
-            })}
-          </div>
+          <MapContainer center={[5.345, -4.024]} zoom={13} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
+            <TileLayer attribution='© OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <FitBounds reports={filtered} />
+            {filtered.filter(r => r.latitude && r.longitude).map(r => (
+              <ReportMarker key={r.id} r={r} onClick={setSelected} />
+            ))}
+          </MapContainer>
         </div>
 
         {/* Selected report card */}
