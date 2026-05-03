@@ -20,6 +20,7 @@ export default function Signaler() {
   const [locating, setLocating] = useState(false)
   const [sending, setSending] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [anonymous, setAnonymous] = useState(false)
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(u => {
@@ -101,8 +102,8 @@ export default function Signaler() {
         status: 'soumis',
         upvotes: 0,
         authorId: user.uid,
-        authorPseudo: 'Citoyen anonyme',
-        isAnonymous: true,
+        authorPseudo: anonymous ? 'Citoyen anonyme' : (user.displayName || user.email?.split('@')[0] || 'Citoyen'),
+        isAnonymous: anonymous,
         createdAt: Date.now(),
         ai: {
           priority: 'P3',
@@ -252,6 +253,25 @@ export default function Signaler() {
             <span style={{ fontSize: 12, color: description.trim().length >= 10 ? '#006B3F' : '#6B7785', marginTop: 4, display: 'block' }}>
               {description.trim().length}/10 caracteres minimum
             </span>
+          </div>
+
+          <div style={s.section}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: '#FFFFFF', borderRadius: 14, border: '1px solid #E5DCC9' }}>
+              <div>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#0F1B2D' }}>Signaler anonymement</span>
+                <p style={{ fontSize: 12, color: '#6B7785', margin: '2px 0 0' }}>Votre nom ne sera pas visible par la mairie</p>
+              </div>
+              <button type="button" onClick={() => setAnonymous(a => !a)} style={{
+                width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
+                background: anonymous ? '#006B3F' : '#E5DCC9', position: 'relative', transition: 'background 0.2s',
+              }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: 11, background: '#FFFFFF',
+                  position: 'absolute', top: 3, left: anonymous ? 23 : 3, transition: 'left 0.2s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                }} />
+              </button>
+            </div>
           </div>
 
           <button style={{ ...s.btnPrimary, opacity: canSubmit && !sending ? 1 : 0.5 }} type="submit" disabled={!canSubmit || sending}>
