@@ -139,7 +139,7 @@ export default function Carte() {
 
         {/* Map */}
         <div style={s.mapContainer}>
-          <MapContainer center={[5.345, -4.024]} zoom={13} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
+          <MapContainer center={[5.345, -4.024]} zoom={13} style={{ height: '100%', width: '100%', position: 'absolute', inset: 0 }} scrollWheelZoom={true}>
             <TileLayer attribution='© OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <FitBounds reports={filtered} />
             {filtered.filter(r => r.latitude && r.longitude).map(r => (

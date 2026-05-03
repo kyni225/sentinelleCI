@@ -221,8 +221,8 @@ export default function MairieDashboard() {
 
       {/* ===== MAP TAB ===== */}
       {tab === 'map' && (
-        <div style={{ height: 'calc(100vh - 130px)', width: '100%' }}>
-          <MapContainer center={[5.345, -4.024]} zoom={13} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
+        <div style={{ height: 'calc(100vh - 130px)', width: '100%', position: 'relative' }}>
+          <MapContainer center={[5.345, -4.024]} zoom={13} style={{ height: '100%', width: '100%', position: 'absolute', inset: 0 }} scrollWheelZoom={true}>
             <TileLayer attribution='© OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <FitBounds signalements={signalements} />
             {signalements.filter(sig => sig.latitude && sig.longitude).map(sig => (
@@ -311,8 +311,8 @@ export default function MairieDashboard() {
             </div>
 
             {/* Mini map */}
-            <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid #E5DCC9', marginBottom: 16 }}>
-              <MapContainer center={[selected.latitude || 5.345, selected.longitude || -4.024]} zoom={16} style={{ height: 220, width: '100%' }} scrollWheelZoom={false} dragging={true}>
+            <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid #E5DCC9', marginBottom: 16, height: 220, position: 'relative' }}>
+              <MapContainer center={[selected.latitude || 5.345, selected.longitude || -4.024]} zoom={16} style={{ height: '100%', width: '100%', position: 'absolute', inset: 0 }} scrollWheelZoom={false} dragging={true}>
                 <TileLayer attribution='© OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <Marker position={[selected.latitude || 5.345, selected.longitude || -4.024]}>
                   <Popup>#{selected.number || selected.id.slice(0, 6)} — {(CATS[selected.category] || CATS.autre).label}</Popup>
