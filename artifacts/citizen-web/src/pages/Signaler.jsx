@@ -31,19 +31,35 @@ export default function Signaler() {
 
   const canSubmit = category && description.trim().length >= 10 && quartier
 
-  function handlePhotoUpload(e) {
+  function compressImage(dataUrl, maxW = 600, quality = 0.3) {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        let w = img.width, h = img.height
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW }
+        const canvas = document.createElement('canvas')
+        canvas.width = w; canvas.height = h
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL('image/jpeg', quality))
+      }
+      img.src = dataUrl
+    })
+  }
+
+  async function handlePhotoUpload(e) {
     const files = Array.from(e.target.files).slice(0, MAX_PHOTOS - photos.length)
     const newPhotos = []
-    files.forEach(file => {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        newPhotos.push(ev.target.result)
-        if (newPhotos.length === files.length) {
-          setPhotos(prev => [...prev, ...newPhotos].slice(0, MAX_PHOTOS))
-        }
-      }
-      reader.readAsDataURL(file)
-    })
+    for (const file of files) {
+      const dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = (ev) => resolve(ev.target.result)
+        reader.readAsDataURL(file)
+      })
+      const compressed = await compressImage(dataUrl, 600, 0.3)
+      newPhotos.push(compressed)
+    }
+    setPhotos(prev => [...prev, ...newPhotos].slice(0, MAX_PHOTOS))
   }
 
   function removePhoto(index) {
