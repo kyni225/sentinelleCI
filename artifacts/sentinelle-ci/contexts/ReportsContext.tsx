@@ -127,21 +127,38 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
     return `S${String(max + 1).padStart(3, "0")}`;
   }, [reports]);
 
+  const MAX_PHOTO_BYTES = 200_000; // 200 KB max per photo (Firestore doc limit ~1 MB)
+
   const compressPhoto = useCallback(
-    async (uri: string): Promise<string> => {
+    async (uri: string): Promise<string | null> => {
       try {
+        for (const [width, quality] of [[320, 0.2], [240, 0.15], [160, 0.1]] as [number, number][]) {
+          const result = await manipulateAsync(
+            uri,
+            [{ resize: { width } }],
+            { compress: quality, format: SaveFormat.JPEG, base64: true },
+          );
+          if (result.base64) {
+            const dataUri = `data:image/jpeg;base64,${result.base64}`;
+            if (dataUri.length <= MAX_PHOTO_BYTES) {
+              return dataUri;
+            }
+          }
+        }
         const result = await manipulateAsync(
           uri,
-          [{ resize: { width: 600 } }],
-          { compress: 0.4, format: SaveFormat.JPEG, base64: true },
+          [{ resize: { width: 120 } }],
+          { compress: 0.08, format: SaveFormat.JPEG, base64: true },
         );
         if (result.base64) {
-          return `data:image/jpeg;base64,${result.base64}`;
+          const dataUri = `data:image/jpeg;base64,${result.base64}`;
+          if (dataUri.length <= MAX_PHOTO_BYTES) return dataUri;
         }
-        return result.uri;
+        console.warn("[compressPhoto] Photo too large even after max compression, skipping");
+        return null;
       } catch (err) {
         console.error("[compressPhoto]", err);
-        return uri;
+        return null;
       }
     },
     [],
@@ -168,9 +185,10 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
       let compressedUris: string[] = [];
       if (input.photoUris.length > 0) {
         try {
-          compressedUris = await Promise.all(
+          const results = await Promise.all(
             input.photoUris.map((uri) => compressPhoto(uri)),
           );
+          compressedUris = results.filter((r): r is string => r !== null);
         } catch (err) {
           console.error("[createReport] Photo compression failed:", err);
           compressedUris = [];
