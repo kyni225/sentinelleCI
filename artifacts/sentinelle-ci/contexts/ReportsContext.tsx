@@ -17,8 +17,7 @@ import {
   increment,
   getDocs,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 
 import type { CategoryId, Status } from "@/constants/categories";
 import { analyzeReport, generateBlockchainTx } from "@/lib/ai";
@@ -127,14 +126,33 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
     return `S${String(max + 1).padStart(3, "0")}`;
   }, [reports]);
 
-  const uploadPhoto = useCallback(
-    async (uri: string, reportId: string, index: number): Promise<string> => {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const path = `signalements/${reportId}/photo_${index}_${Date.now()}`;
-      const storageRef = ref(storage, path);
-      await uploadBytes(storageRef, blob);
-      return getDownloadURL(storageRef);
+  const compressPhoto = useCallback(
+    async (uri: string): Promise<string> => {
+      try {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = reject;
+          img.src = uri;
+        });
+        const MAX = 600;
+        let w = img.width;
+        let h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        return canvas.toDataURL("image/jpeg", 0.4);
+      } catch (err) {
+        console.error("[compressPhoto]", err);
+        return uri;
+      }
     },
     [],
   );
@@ -156,16 +174,16 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
       const now = Date.now();
       const tempId = `temp_${now}`;
 
-      // Upload photos to Firebase Storage (not base64 in Firestore)
-      let uploadedUris: string[] = [];
+      // Compress photos so they fit in Firestore (< 1 MB total)
+      let compressedUris: string[] = [];
       if (input.photoUris.length > 0) {
         try {
-          uploadedUris = await Promise.all(
-            input.photoUris.map((uri, i) => uploadPhoto(uri, tempId, i)),
+          compressedUris = await Promise.all(
+            input.photoUris.map((uri) => compressPhoto(uri)),
           );
         } catch (err) {
-          console.error("[createReport] Photo upload failed, continuing without photos:", err);
-          uploadedUris = [];
+          console.error("[createReport] Photo compression failed:", err);
+          compressedUris = [];
         }
       }
 
@@ -174,7 +192,7 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
         number: nextNumber(),
         category: input.category,
         description: input.description,
-        photoUris: uploadedUris,
+        photoUris: compressedUris,
         quartier: input.quartier,
         address: input.address,
         latitude: input.latitude,
@@ -196,7 +214,7 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
       newReport.id = docRef.id;
       return newReport;
     },
-    [countSimilar, nextNumber, reports],
+    [countSimilar, nextNumber, reports, compressPhoto],
   );
 
   const getReport = useCallback(
