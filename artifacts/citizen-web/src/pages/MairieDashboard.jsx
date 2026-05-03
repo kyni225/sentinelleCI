@@ -211,8 +211,7 @@ export default function MairieDashboard() {
                     <option value="soumis">Soumis</option><option value="valide">Validé</option><option value="en_cours">En cours</option><option value="resolu">Résolu</option>
                   </select>
                 </div>
-                <button style={s.btnUpvote} onClick={() => upvoteReport(sig.id)}>👍 Soutenir</button>
-                <button style={s.btnMap} onClick={() => { closeDetail(); setTab('map') }}>📍 Carte</button>
+                <button style={s.btnMap} onClick={() => { closeDetail(); setTab('map') }}>📍 Voir la carte</button>
               </div>
             </div>
           ))}
@@ -335,14 +334,11 @@ export default function MairieDashboard() {
               </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 16, borderTop: '1px solid #E5DCC9' }}>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <select style={{ ...s.actionSelect, fontSize: 15, padding: '10px 16px', flex: 1 }} value={selected.status} onChange={e => { updateStatus(selected.id, e.target.value); setSelected({ ...selected, status: e.target.value }) }}>
-                  <option value="soumis">Soumis</option><option value="valide">Validé</option><option value="en_cours">En cours</option><option value="resolu">Résolu</option>
-                </select>
-                <button style={s.btnUpvote} onClick={() => upvoteReport(selected.id)}>👍 {selected.upvotes || 0}</button>
-              </div>
-              <button style={{ ...s.btnMap, width: '100%', justifyContent: 'center', padding: '12px 16px' }} onClick={() => { closeDetail(); setTab('map') }}>📍 Voir sur la carte</button>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', paddingTop: 16, borderTop: '1px solid #E5DCC9' }}>
+              <select style={{ ...s.actionSelect, fontSize: 15, padding: '10px 16px', flex: 1 }} value={selected.status} onChange={e => { updateStatus(selected.id, e.target.value); setSelected({ ...selected, status: e.target.value }) }}>
+                <option value="soumis">Soumis</option><option value="valide">Validé</option><option value="en_cours">En cours</option><option value="resolu">Résolu</option>
+              </select>
+              <button style={{ ...s.btnMap, padding: '10px 16px' }} onClick={() => { closeDetail(); setTab('map') }}>📍 Voir la carte</button>
             </div>
           </div>
         </div>
