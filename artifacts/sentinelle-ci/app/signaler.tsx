@@ -91,8 +91,8 @@ export default function SignalerScreen() {
           quality: 0.8,
           allowsEditing: false,
         });
-        if (!result.canceled && result.assets[0]) {
-          setPhotoUris((p) => [...p, result.assets[0]!.uri]);
+        if (!result.canceled && result.assets?.[0]?.uri) {
+          setPhotoUris((p) => [...p, result.assets[0].uri]);
           await tryHaptic("light");
         }
       } else {
@@ -111,13 +111,14 @@ export default function SignalerScreen() {
           allowsMultipleSelection: remaining > 1,
           selectionLimit: remaining,
         });
-        if (!result.canceled && result.assets) {
-          const uris = result.assets.map((a) => a.uri).slice(0, remaining);
+        if (!result.canceled && result.assets?.length) {
+          const uris = result.assets.map((a) => a.uri).filter(Boolean).slice(0, remaining);
           setPhotoUris((p) => [...p, ...uris]);
           await tryHaptic("light");
         }
       }
-    } catch {
+    } catch (err) {
+      console.error("[pickPhoto]", err);
       Alert.alert("Erreur", "Impossible d'accéder à la photo.");
     }
   }

@@ -22,12 +22,20 @@
       }
     },
     "android": {
-      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [
+      "./plugins/withAndroidStability",
       [
         "expo-router",
         {
