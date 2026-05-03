@@ -18,7 +18,6 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 
 import type { CategoryId, Status } from "@/constants/categories";
 import { analyzeReport, generateBlockchainTx } from "@/lib/ai";
@@ -127,39 +126,18 @@ export function ReportsProvider({ children }: { children: React.ReactNode }) {
     return `S${String(max + 1).padStart(3, "0")}`;
   }, [reports]);
 
-  const MAX_PHOTO_BYTES = 200_000; // 200 KB max per photo (Firestore doc limit ~1 MB)
+  const MAX_PHOTO_BYTES = 200_000; // 200 KB max per photo
 
   const compressPhoto = useCallback(
     async (uri: string): Promise<string | null> => {
-      try {
-        for (const [width, quality] of [[320, 0.2], [240, 0.15], [160, 0.1]] as [number, number][]) {
-          const result = await manipulateAsync(
-            uri,
-            [{ resize: { width } }],
-            { compress: quality, format: SaveFormat.JPEG, base64: true },
-          );
-          if (result.base64) {
-            const dataUri = `data:image/jpeg;base64,${result.base64}`;
-            if (dataUri.length <= MAX_PHOTO_BYTES) {
-              return dataUri;
-            }
-          }
+      if (uri.startsWith("data:")) {
+        if (uri.length <= MAX_PHOTO_BYTES) {
+          return uri;
         }
-        const result = await manipulateAsync(
-          uri,
-          [{ resize: { width: 120 } }],
-          { compress: 0.08, format: SaveFormat.JPEG, base64: true },
-        );
-        if (result.base64) {
-          const dataUri = `data:image/jpeg;base64,${result.base64}`;
-          if (dataUri.length <= MAX_PHOTO_BYTES) return dataUri;
-        }
-        console.warn("[compressPhoto] Photo too large even after max compression, skipping");
-        return null;
-      } catch (err) {
-        console.error("[compressPhoto]", err);
+        console.warn("[compressPhoto] Photo too large, skipping");
         return null;
       }
+      return uri;
     },
     [],
   );

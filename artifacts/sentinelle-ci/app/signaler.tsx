@@ -88,11 +88,12 @@ export default function SignalerScreen() {
           return;
         }
         const result = await ImagePicker.launchCameraAsync({
-          quality: 0.8,
+          quality: 0.3,
+          base64: true,
           allowsEditing: false,
         });
-        if (!result.canceled && result.assets?.[0]?.uri) {
-          setPhotoUris((p) => [...p, result.assets[0].uri]);
+        if (!result.canceled && result.assets?.[0]?.base64) {
+          setPhotoUris((p) => [...p, `data:image/jpeg;base64,${result.assets[0].base64}`]);
           await tryHaptic("light");
         }
       } else {
@@ -106,14 +107,15 @@ export default function SignalerScreen() {
         }
         const remaining = MAX_PHOTOS - photoUris.length;
         const result = await ImagePicker.launchImageLibraryAsync({
-          quality: 0.8,
+          quality: 0.3,
+          base64: true,
           allowsEditing: false,
           allowsMultipleSelection: remaining > 1,
           selectionLimit: remaining,
         });
         if (!result.canceled && result.assets?.length) {
-          const uris = result.assets.map((a) => a.uri).filter(Boolean).slice(0, remaining);
-          setPhotoUris((p) => [...p, ...uris]);
+          const base64s = result.assets.map((a) => a.base64 ? `data:image/jpeg;base64,${a.base64}` : null).filter(Boolean).slice(0, remaining) as string[];
+          setPhotoUris((p) => [...p, ...base64s]);
           await tryHaptic("light");
         }
       }
